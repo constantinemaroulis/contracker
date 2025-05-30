@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import UserSessionManager from '@/Components/UserSessionManager';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
+import DeviceInfo from '@/Components/DeviceInfo';
+import DeviceMap from '@/Components/DeviceMap';
 
 export default function Dashboard() {
     return (
@@ -15,11 +17,24 @@ export default function Dashboard() {
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <UserSessionManager />
-
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
                         <div className="p-6 text-gray-900 dark:text-gray-100">
+                            <UserSessionManager />
+                        </div>
+                        <div className="p-6 text-gray-900 dark:text-gray-100">
+                            <DeviceInfo />
+                        </div>
+                        <div className="p-6 text-gray-900 dark:text-gray-100">
+                            <DeviceMap />
+                        </div>
+                        <div className="p-6 text-gray-900 dark:text-gray-100">
                             You're logged in!
+                        </div>
+                        <div className="p-6 text-gray-900 dark:text-gray-100">
+                            {/* Link to the jobs view */}
+                            <Link href="/jobs" className="btn btn-primary">
+                                View Jobs
+                            </Link>
                         </div>
                     </div>
                 </div>
