@@ -18,6 +18,12 @@ class ContrackerDevice extends Model
         'latitude',
         'longitude',
         'accuracy',
+        'name',
+        'device_type',
+        'local_ip',
+        'public_ip',
+        'mac_address',
+        'device_details',
     ];
 
     public $timestamps = true; // Enable timestamps if needed
@@ -28,6 +34,7 @@ class ContrackerDevice extends Model
         'latitude' => 'float',
         'longitude' => 'float',
         'accuracy' => 'float',
+        'last_seen' => 'datetime',
     ];
 
     protected $hidden = [

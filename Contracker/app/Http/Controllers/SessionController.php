@@ -8,12 +8,14 @@ use App\Models\ContrackerJob;
 use App\Models\ContrackerJobLocation;
 use App\Models\ContrackerJobGeofence;
 
+use Inertia\Inertia;
+use Inertia\Response;
 
+use Carbon\Carbon;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-
 
 
 
@@ -70,7 +72,7 @@ class SessionController extends Controller
             $device = ContrackerDevice::where('uuid', $uuid)->firstOrFail();
             return response()->json(['device' => $device]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['error' => 'Device not found'], 404);
+            return response()->json(['error' => 'Device not found!'], 404);
         }
     }
 
@@ -134,7 +136,7 @@ class SessionController extends Controller
     public function getJobLocation($jobId)
     {
         // Eager load the geofence relationship.
-        $location = \App\Models\ContrackerJobLocation::with('geofence')->where('job_id', $jobId)->first();
+        $location = ContrackerJobLocation::with('geofence')->where('job_id', $jobId)->first();
 
         if (!$location) {
             return response()->json(['error' => 'Job location not found'], 404);
@@ -159,4 +161,53 @@ class SessionController extends Controller
 
         return response()->json(['status' => 'Geofence saved!', 'geofence' => $geofence]);
     }
+
+    public function updateDeviceName(Request $request, $uuid)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'device_type' => 'nullable|string|max:255',
+            'local_ip' => 'nullable|string|max:255',
+            'public_ip' => 'nullable|string|max:255',
+            'mac_address' => 'nullable|string|max:255',
+            'device_details' => 'nullable|string',
+        ]);
+
+        $device = ContrackerDevice::where('uuid', $uuid)->first();
+
+        if (!$device) {
+            return response()->json(['error' => 'Device not found'], 404);
+        }
+
+        $device->update($request->only([
+            'name',
+            'device_type',
+            'local_ip',
+            'public_ip',
+            'mac_address',
+            'device_details',
+        ]));
+
+        return response()->json(['success' => true, 'device' => $device]);
+    }
+
+
+    public function listDevices(Request $request)
+    {
+        $now = Carbon::now();
+        $devices = ContrackerDevice::all()->map(function ($device) use ($now) {
+            $device->online = $device->last_seen && ($now->diffInMinutes($device->last_seen)*-1) <= 1;
+            $device->last_ping = $now->diffInMinutes($device->last_seen)*-1;
+            return $device;
+        });
+
+        if ($request->wantsJson()) {
+            return response()->json(['devices' => $devices]);
+        }
+
+        return Inertia::render('Devices', [
+            'devices' => $devices
+        ]);
+    }
+
 }

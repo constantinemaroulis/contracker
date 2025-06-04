@@ -38,6 +38,8 @@ Route::get('/geofence/{jobId}', function ($jobId) {
 })->name('geofence');
 
 
+Route::get('/devices', [SessionController::class, 'listDevices'])->name('devices.list');
+
 
 // Session management routes
 Route::middleware('web')->group(function () {
@@ -49,6 +51,26 @@ Route::middleware('web')->group(function () {
     Route::post('/session/store', [SessionController::class, 'store']);
     Route::get('/session/get', [SessionController::class, 'get']);
     Route::post('/session/destroy', [SessionController::class, 'destroy']);
+    Route::post('/session/device/{uuid}/updateDeviceName', [SessionController::class, 'updateDeviceName'])->name('session.device.updateDeviceName');
+    Route::post('/session/device/ping', function (\Illuminate\Http\Request $request) {
+        $uuid = $request->input('uuid');
+        
+        if (!$uuid) return response()->json(['error' => 'UUID is required'], 422);
+        
+        \App\Models\ContrackerDevice::where('uuid', $uuid)->update(['last_seen' => now()]);
+        
+        return response()->json(['status' => 'pinged']);
+    })->name('session.device.ping');
+
+    Route::get('/session/deviceip', function () {
+        try {
+            $ip = file_get_contents('https://api.ipify.org');
+            return response()->json(['ip' => $ip]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Unable to fetch IP'], 500);
+        }
+    })->name('session.device.ip');
+
 
     Route::get('/session/jobs', [SessionController::class, 'getJobs'])->name('session.getJobs');
     Route::get('/session/job-location/{jobId}', [SessionController::class, 'getJobLocation'])->name('session.getJobLocation');

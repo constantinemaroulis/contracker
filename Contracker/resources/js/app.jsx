@@ -9,6 +9,18 @@ import { route } from 'ziggy-js';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 
+// Register a heartbeat to keep the device session alive
+function useDeviceHeartbeat() {
+    const uuid = localStorage.getItem('device_uuid');
+    
+    if (!uuid) return;
+
+    const interval = setInterval(() => {
+      axios.post(route('session.device.ping'), { uuid }).catch(console.error);
+    }, 20_000); // 1 minutes in milliseconds
+
+    return () => clearInterval(interval);
+}
 
 // Register device with a unique UUID and geolocation data
 function registerDeviceOnLoad() {
@@ -77,6 +89,8 @@ window.addEventListener('load', () => {
 
 const appName = import.meta.env.VITE_APP_NAME || 'Contracker Beta';
 
+
+
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) =>
@@ -85,6 +99,9 @@ createInertiaApp({
             import.meta.glob('./Pages/**/*.jsx'),
         ),
     setup({ el, App, props }) {
+        // Register heartbeat
+        useDeviceHeartbeat();
+        
         const root = createRoot(el);
 
         root.render(<App {...props} />);
