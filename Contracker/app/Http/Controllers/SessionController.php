@@ -53,7 +53,7 @@ class SessionController extends Controller
         );
 
         if (!$device) {
-            \Log::error('Device not saved in DB:', $validated);
+            Log::error('Device not saved in DB:', $validated);
             return response()->json(['error' => 'Database save failed'], 500);
         }
 
@@ -196,7 +196,7 @@ class SessionController extends Controller
     {
         $now = Carbon::now();
         $devices = ContrackerDevice::all()->map(function ($device) use ($now) {
-            $device->online = $device->last_seen && ($now->diffInMinutes($device->last_seen)*-1) <= 1;
+            $device->online = $device->last_seen && ($now->diffInMinutes($device->last_seen)*-1) <= 5; // Device is online if last seen within 5 minutes
             $device->last_ping = $now->diffInMinutes($device->last_seen)*-1;
             return $device;
         });

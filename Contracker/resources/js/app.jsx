@@ -2,6 +2,7 @@ import '../css/app.css';
 import './bootstrap';
 
 import { createInertiaApp } from '@inertiajs/react';
+
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { Ziggy } from './ziggy'; // Ensure Ziggy config is correctly imported
@@ -12,14 +13,26 @@ import axios from 'axios';
 // Register a heartbeat to keep the device session alive
 function useDeviceHeartbeat() {
     const uuid = localStorage.getItem('device_uuid');
-    
+
     if (!uuid) return;
+
+    const hasPingedKey = `device_${uuid}_has_pinged`;
+
+    if (localStorage.getItem(hasPingedKey) == false || localStorage.getItem(hasPingedKey) == null || !localStorage.getItem(hasPingedKey)) {
+        axios.post(route('session.device.ping'), { uuid }).catch(console.error);
+        localStorage.setItem(hasPingedKey, 'true');
+    }
 
     const interval = setInterval(() => {
       axios.post(route('session.device.ping'), { uuid }).catch(console.error);
-    }, 20_000); // 1 minutes in milliseconds
+    }, 100_000); // 1 minutes in milliseconds
 
-    return () => clearInterval(interval);
+
+    return () => {
+        clearInterval(interval);
+
+    };
+
 }
 
 // Register device with a unique UUID and geolocation data
@@ -48,11 +61,8 @@ function registerDeviceOnLoad() {
                         accuracy,
                     }).then(() => {
                         console.log(`Location submitted successfully with ${accuracy.toFixed(2)}m accuracy. Map will continue to update.`);
-                        // setSubmitted(true); // Prevent re-posting for this component instance
                     }).catch(err => {
                         console.error('API submission error:', err);
-                        // setStatusMessage(`Failed to submit location: ${err.message}. Current accuracy: ${currentAccuracy.toFixed(2)}m.`);
-                        // Consider retry logic or other error handling here if needed
                     });
                 },
                 (error) => {
@@ -89,7 +99,12 @@ window.addEventListener('load', () => {
 
 const appName = import.meta.env.VITE_APP_NAME || 'Contracker Beta';
 
-
+window.addEventListener('beforeunload', () => {
+  const uuid = localStorage.getItem('device_uuid');
+  if (!uuid) return;
+  const hasPingedKey = `device_${uuid}_has_pinged`;
+  localStorage.removeItem(hasPingedKey);
+});
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -100,11 +115,13 @@ createInertiaApp({
         ),
     setup({ el, App, props }) {
         // Register heartbeat
-        useDeviceHeartbeat();
-        
+        const cleanup = useDeviceHeartbeat();
+
         const root = createRoot(el);
 
         root.render(<App {...props} />);
+
+        return cleanup;
     },
     progress: {
         color: '#4B5563',
