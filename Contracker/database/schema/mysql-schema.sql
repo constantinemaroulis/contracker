@@ -38,6 +38,11 @@ CREATE TABLE `contracker_devices` (
   `device_type` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
+  `last_seen` timestamp NULL DEFAULT NULL,
+  `local_ip` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `public_ip` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `mac_address` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `device_details` text COLLATE utf8mb4_unicode_ci,
   PRIMARY KEY (`id`),
   UNIQUE KEY `contracker_devices_uuid_unique` (`uuid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -65,6 +70,20 @@ CREATE TABLE `contracker_jobs` (
   UNIQUE KEY `contracker_jobs_job_no_unique` (`job_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `contracker_jobs_geofence`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `contracker_jobs_geofence` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `job_location_id` bigint unsigned NOT NULL,
+  `boundary_points` json NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `contracker_jobs_geofence_job_location_id_foreign` (`job_location_id`),
+  CONSTRAINT `contracker_jobs_geofence_job_location_id_foreign` FOREIGN KEY (`job_location_id`) REFERENCES `contracker_jobs_location` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `contracker_jobs_location`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -75,6 +94,7 @@ CREATE TABLE `contracker_jobs_location` (
   `longitude` decimal(10,7) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
+  `geo_fence` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   KEY `contracker_jobs_location_job_id_foreign` (`job_id`),
   CONSTRAINT `contracker_jobs_location_job_id_foreign` FOREIGN KEY (`job_id`) REFERENCES `contracker_jobs` (`id`) ON DELETE CASCADE
@@ -192,3 +212,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (4,'2025_05_29_1537
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (5,'2025_05_29_231605_create_contracker_jobs_table',3);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (6,'2025_05_29_231606_create_contracker_job_locations_table',3);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (7,'2025_05_29_231816_update_devices_table',4);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (8,'2025_05_30_011711_add_geo_fence_to_contracker_jobs_location',5);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (9,'2025_05_30_011752_create_contracker_jobs_geofence',6);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (10,'2025_06_03_202949_add_last_seen_to_devices_table',7);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (11,'2025_06_03_215341_add_device_metadata_to_contracker_devices_table',8);

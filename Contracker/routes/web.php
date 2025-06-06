@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionController;
+use App\Http\Controllers\MessageController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -39,6 +40,8 @@ Route::get('/geofence/{jobId}', function ($jobId) {
 
 
 Route::get('/devices', [SessionController::class, 'listDevices'])->name('devices.list');
+
+Route::post('/devices/send-message', [MessageController::class, 'send'])->name('devices.message.send');
 
 
 // Session management routes

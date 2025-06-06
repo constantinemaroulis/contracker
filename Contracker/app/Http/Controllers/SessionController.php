@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\DeviceMessage;
 use Illuminate\Http\Request;
 use App\Models\ContrackerDevice;
 use App\Models\ContrackerJob;
@@ -208,6 +209,13 @@ class SessionController extends Controller
         return Inertia::render('Devices', [
             'devices' => $devices
         ]);
+    }
+
+    public function sendDeviceMessage(Request $request, $uuid)
+    {
+        $request->validate(['message' => 'required|string']);
+        broadcast(new DeviceMessage($uuid, $request->message));
+        return response()->json(['status' => 'sent']);
     }
 
 }
