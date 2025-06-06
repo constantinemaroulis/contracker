@@ -2,42 +2,39 @@ import React, { useState, useEffect } from 'react';
 import Modal from '@/Components/Modal';
 import ChatInput from '@/Components/ChatInput';
 import ChatMessages from '@/Components/ChatMessages';
-import '../echo'; // Ensure Echo is initialized
+import '../echo';
 
 export default function ChatModal({ show, onClose, device }) {
     const [messages, setMessages] = useState([]);
     const uuid = device?.uuid;
 
-    // This effect handles listening for INCOMING messages from the device
     useEffect(() => {
         if (!uuid) return;
-
-        console.log(`ChatModal: Subscribing to channel for UUID: ${uuid}`);
-        setMessages([]); // Clear messages when modal opens for a new device
-
+        setMessages([]);
         const channel = window.Echo.private(`device.${uuid}`);
-
+        
         channel.listen('.DeviceMessage', (e) => {
-            console.log('ChatModal: Received DeviceMessage from remote device', e);
-            setMessages((prevMessages) => [...prevMessages, { sender: 'device', text: e.message }]);
+            console.log("Admin received a reply:", e);
+            // Add the new reply to the message list, using the senderName from the event
+            setMessages((prev) => [...prev, { 
+                sender: e.senderName || 'Device', // Use the name from the event
+                text: e.message,
+                isReply: true // This flag identifies a message from a device
+            }]);
         });
-
-        // Cleanup when the component unmounts or the device changes
-        return () => {
-            console.log(`ChatModal: Leaving channel for UUID: ${uuid}`);
-            window.Echo.leave(`device.${uuid}`);
-        };
+        
+        return () => window.Echo.leave(`device.${uuid}`);
     }, [uuid]);
 
-    // This function is called by ChatInput to optimistically add the sent message to the UI
     const handleSendMessage = (messageText) => {
-        console.log('ChatModal: Optimistically adding sent message to UI.');
-        setMessages((prevMessages) => [...prevMessages, { sender: 'you', text: messageText }]);
+        setMessages((prev) => [...prev, { 
+            sender: 'You', // The sender is the logged-in admin
+            text: messageText,
+            isReply: false 
+        }]);
     };
 
-    if (!device) {
-        return null;
-    }
+    if (!device) return null;
 
     return (
         <Modal show={show} onClose={onClose} maxWidth="lg">

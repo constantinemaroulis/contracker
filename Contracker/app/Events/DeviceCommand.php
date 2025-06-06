@@ -7,18 +7,39 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Queue\ShouldQueue; // Import this interface
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class DeviceCommand implements ShouldBroadcast
+// By implementing ShouldQueue and setting the public $connection property to 'sync',
+// we are explicitly telling Laravel: "Do NOT use the default database queue for this event.
+// Execute the broadcast immediately, as part of the initial web request."
+// This is the standard, foolproof way to ensure real-time events are not delayed.
+
+class DeviceCommand implements ShouldBroadcast, ShouldQueue
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    /**
+     * The name of the queue connection to use for this job.
+     *
+     * @var string
+     */
+    public $connection = 'sync';
+
+    /**
+     * The public properties that will be serialized and broadcast.
+     */
     public $uuid;
     public $command;
     public $payload;
+
     /**
      * Create a new event instance.
+     *
+     * @param string $uuid
+     * @param string $command
+     * @param array $payload
      */
     public function __construct($uuid, $command, $payload = [])
     {
@@ -39,6 +60,11 @@ class DeviceCommand implements ShouldBroadcast
         ];
     }
 
+    /**
+     * The name of the event to broadcast as.
+     *
+     * @return string
+     */
     public function broadcastAs()
     {
         return 'DeviceCommand';

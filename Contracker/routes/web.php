@@ -50,8 +50,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // ... inside your routes/web.php
-Route::post('/session/device/{uuid}/command', [SessionController::class, 'sendDeviceCommand'])
-    ->name('session.device.command');
 
 /*
 |--------------------------------------------------------------------------
@@ -83,6 +81,10 @@ Route::middleware('web')->group(function () {
     Route::get('/session/jobs', [SessionController::class, 'getJobs'])->name('session.getJobs');
     Route::get('/session/job-location/{jobId}', [SessionController::class, 'getJobLocation'])->name('session.getJobLocation');
     Route::post('/session/save-geofence', [SessionController::class, 'saveGeofence'])->name('session.saveGeofence');
+
+    Route::post('/session/device/command/{uuid}', [SessionController::class, 'sendDeviceCommand'])
+    ->name('session.device.command');
+
 });
 
 

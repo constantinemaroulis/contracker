@@ -4,23 +4,33 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Queue\ShouldQueue; // 1. Import this
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class DeviceMessage implements ShouldBroadcast
+// 2. Implement ShouldQueue
+class DeviceMessage implements ShouldBroadcast, ShouldQueue
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    /**
+     * 3. Force this broadcast to run synchronously.
+     *
+     * @var string
+     */
+    public $connection = 'sync';
+
     public $uuid;
     public $message;
+    public $senderName;
 
-    public function __construct($uuid, $message)
+    public function __construct($uuid, $message, $senderName)
     {
         $this->uuid = $uuid;
         $this->message = $message;
+        $this->senderName = $senderName;
     }
 
     public function broadcastOn(): Channel
