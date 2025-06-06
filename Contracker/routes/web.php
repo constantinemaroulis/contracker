@@ -51,7 +51,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // ... inside your routes/web.php
 Route::post('/session/device/{uuid}/command', [SessionController::class, 'sendDeviceCommand'])
-    ->middleware('auth')
     ->name('session.device.command');
 
 /*

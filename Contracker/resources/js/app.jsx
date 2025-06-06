@@ -8,6 +8,9 @@ import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import './echo';
+import BroadcastConnectionStatus from './Components/BroadcastConnectionStatus';
+
+const appName = import.meta.env.VITE_APP_NAME || 'Contracker Beta';
 
 // This hook can remain to manage the online status for the heartbeat
 function useOnlineStatus() {
@@ -68,14 +71,32 @@ function registerDeviceOnLoad() {
 function useDeviceCommandListener() {
     useEffect(() => {
         const uuid = localStorage.getItem('device_uuid');
-        if (!uuid) return;
+        if (!uuid) {
+            console.log('DEBUG (Remote Device): No device_uuid found. Command listener not starting.');
+            return;
+        }
+
+        console.log(`DEBUG (Remote Device): Found UUID ${uuid}. Attempting to subscribe to private channel device.${uuid}`);
+
+        // Listen for subscription success
         window.Echo.private(`device.${uuid}`)
+            .on('pusher:subscription_succeeded', () => {
+                console.log(`DEBUG (Remote Device): Successfully subscribed to channel: device.${uuid}`);
+            })
+            .on('pusher:subscription_error', (status) => {
+                console.error(`DEBUG (Remote Device): FAILED to subscribe to channel device.${uuid}. Status:`, status);
+                alert(`Could not connect to the chat server. Status: ${status.status}. Please check console for details.`);
+            })
             .listen('.DeviceCommand', (e) => {
+                console.log('DEBUG (Remote Device): Received a DeviceCommand event!', e);
                 if (e.command === 'message' && e.payload.message) {
+                    console.log('DEBUG (Remote Device): Message received, showing alert.');
                     alert(`Message from dashboard: ${e.payload.message}`);
                 }
             });
+
         return () => {
+            console.log(`DEBUG (Remote Device): Leaving channel device.${uuid}`);
             window.Echo.leave(`device.${uuid}`);
         };
     }, []);
@@ -97,18 +118,20 @@ window.addEventListener('load', () => {
   }
 });
 
-const appName = import.meta.env.VITE_APP_NAME || 'Contracker';
-
 createInertiaApp({
   title: (title) => `${title} - ${appName}`,
   resolve: (name) =>
     resolvePageComponent(`./Pages/${name}.jsx`, import.meta.glob('./Pages/**/*.jsx')),
   setup({ el, App, props }) {
-    createRoot(el).render(
-      <AppWrapper>
-        <App {...props} />
-      </AppWrapper>
-    );
+    if (!el.hasChildNodes()) { // Ensure we don't re-render over existing content
+        const root = createRoot(el);
+        root.render(
+            <AppWrapper>
+                <App {...props} />
+                <BroadcastConnectionStatus />
+            </AppWrapper>
+        );
+    }
   },
   progress: {
     color: '#4B5563',

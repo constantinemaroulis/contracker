@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import AppLayout from '@/Layouts/AppLayout'; // 👈 Import the new AppLayout
+import AppLayout from '@/Layouts/AppLayout';
 import { Head } from '@inertiajs/react';
 import ChatModal from '@/Components/ChatModal';
 
@@ -9,7 +9,8 @@ export default function Devices({ auth }) {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [isChatModalOpen, setChatModalOpen] = useState(false);
 
-  // ... (keep the existing formatDateTimeNY and formatTimeAgo functions) ...
+  console.log('DEBUG: Devices.jsx page rendered. Auth user:', auth.user);
+
   const formatDateTimeNY = (isoString) => {
     if (!isoString) return 'Never';
     try {
@@ -42,12 +43,16 @@ export default function Devices({ auth }) {
 
   useEffect(() => {
     let isMounted = true;
+    console.log('DEBUG: Devices.jsx component mounted. Starting to fetch devices.');
     const fetchDevices = () => {
         axios.get(route('devices.list'))
             .then(res => {
-                if (isMounted) setDevices(res.data.devices);
+                if (isMounted) {
+                    console.log('DEBUG: Devices.jsx fetched data:', res.data.devices);
+                    setDevices(res.data.devices);
+                }
             })
-            .catch(err => console.error('Failed to load devices', err));
+            .catch(err => console.error('DEBUG: Devices.jsx failed to load devices', err));
     };
 
     fetchDevices();
@@ -60,17 +65,18 @@ export default function Devices({ auth }) {
   }, []);
 
   const openChat = (device) => {
+    console.log('DEBUG: openChat called for device:', device);
     setSelectedDevice(device);
     setChatModalOpen(true);
   };
 
   const closeChat = () => {
+    console.log('DEBUG: closeChat called.');
     setChatModalOpen(false);
     setSelectedDevice(null);
   };
 
   return (
-    // 👇 Use AppLayout here
     <AppLayout
         header={<h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Device Management</h2>}
     >
@@ -82,7 +88,6 @@ export default function Devices({ auth }) {
                       <h1 className="text-2xl font-bold mb-4">Connected Devices</h1>
                       <div className="overflow-x-auto">
                         <table className="min-w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 shadow">
-                          {/* ... table head ... */}
                           <thead>
                             <tr className="bg-gray-100 dark:bg-gray-600 text-left">
                               <th className="px-4 py-2 border dark:border-gray-600">Name</th>
@@ -95,31 +100,45 @@ export default function Devices({ auth }) {
                               <th className="px-4 py-2 border dark:border-gray-600">Actions</th>
                             </tr>
                           </thead>
+                          {/* FIX: Corrected the JSX ternary operator here */}
                           <tbody>
-                            {devices.map(device => (
-                              <tr key={device.uuid} className="border-t dark:border-gray-600">
-                                <td className="px-4 py-2 border dark:border-gray-600">{device.name || 'Unnamed'}</td>
-                                <td className="px-4 py-2 border dark:border-gray-600">{device.job_id || '-'}</td>
-                                <td className="px-4 py-2 border dark:border-gray-600">{device.device_type || 'N/A'}</td>
-                                <td className="px-4 py-2 border dark:border-gray-600">{device.public_ip || 'N/A'}</td>
-                                <td className="px-4 py-2 border dark:border-gray-600">{formatDateTimeNY(device.last_seen)}</td>
-                                <td className="px-4 py-2 border dark:border-gray-600">{device.last_ping !== null ? formatTimeAgo(device.last_ping) : 'Never'}</td>
-                                <td className="px-4 py-2 border font-bold">
-                                  {device.online ? (
-                                    <span className="text-green-500">✔ Online</span>
-                                  ) : (
-                                    <span className="text-red-500">✖ Offline</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-2 border dark:border-gray-600">
-                                    {device.online && (
-                                        <button onClick={() => openChat(device)} className="text-blue-600 dark:text-blue-400 hover:underline">
-                                            Chat
-                                        </button>
-                                    )}
-                                </td>
-                              </tr>
-                            ))}
+                            {devices && devices.length > 0 ? (
+                                devices.map(device => {
+                                    console.log(`DEBUG: Processing device ${device.uuid}, online status: ${device.online}`);
+                                    return (
+                                        <tr key={device.uuid} className="border-t dark:border-gray-600">
+                                            <td className="px-4 py-2 border dark:border-gray-600">{device.name || 'Unnamed'}</td>
+                                            <td className="px-4 py-2 border dark:border-gray-600">{device.job_id || '-'}</td>
+                                            <td className="px-4 py-2 border dark:border-gray-600">{device.device_type || 'N/A'}</td>
+                                            <td className="px-4 py-2 border dark:border-gray-600">{device.public_ip || 'N/A'}</td>
+                                            <td className="px-4 py-2 border dark:border-gray-600">{formatDateTimeNY(device.last_seen)}</td>
+                                            <td className="px-4 py-2 border dark:border-gray-600">{device.last_ping !== null ? formatTimeAgo(device.last_ping) : 'Never'}</td>
+                                            <td className="px-4 py-2 border font-bold">
+                                                {device.online ? (
+                                                    <span className="text-green-500">✔ Online</span>
+                                                ) : (
+                                                    <span className="text-red-500">✖ Offline</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-2 border dark:border-gray-600">
+                                                {device.online ? (
+                                                    <button onClick={() => openChat(device)} className="text-blue-600 dark:text-blue-400 hover:underline">
+                                                        Chat
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-red-500">✖ Offline</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan="8" className="p-4 text-center">
+                                        No devices found or still loading...
+                                    </td>
+                                </tr>
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -127,6 +146,7 @@ export default function Devices({ auth }) {
                 </div>
             </div>
         </div>
+        {console.log(`DEBUG: Rendering ChatModal with show=${isChatModalOpen}`)}
         <ChatModal show={isChatModalOpen} onClose={closeChat} device={selectedDevice} />
     </AppLayout>
   );
