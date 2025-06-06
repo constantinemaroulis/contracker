@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\DeviceCommand;
 use App\Events\DeviceMessage;
 use Illuminate\Http\Request;
 use App\Models\ContrackerDevice;
@@ -211,11 +212,16 @@ class SessionController extends Controller
         ]);
     }
 
-    public function sendDeviceMessage(Request $request, $uuid)
+    public function sendDeviceCommand(Request $request, $uuid)
     {
-        $request->validate(['message' => 'required|string']);
-        broadcast(new DeviceMessage($uuid, $request->message));
-        return response()->json(['status' => 'sent']);
+        $validated = $request->validate([
+            'command' => 'required|string',
+            'payload' => 'sometimes|array'
+        ]);
+
+        broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? []));
+
+        return response()->json(['status' => 'Command sent']);
     }
 
 }
