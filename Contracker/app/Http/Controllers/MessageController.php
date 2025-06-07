@@ -10,7 +10,7 @@ class MessageController extends Controller
 {
     public function send(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'uuid' => 'required|string',
             'message' => 'required|string',
         ]);
@@ -18,7 +18,7 @@ class MessageController extends Controller
         $device = ContrackerDevice::where('uuid', $validated['uuid'])->first();
         $deviceName = $device && $device->name ? $device->name : 'Unknown Device (' . substr($validated['uuid'], 0, 8) . ')';
 
-        broadcast(new DeviceMessage($validated['uuid'], $validated['message'], $deviceName))->toOthers();
+        broadcast(new DeviceMessage($validated['uuid'], $validated['message'], $deviceName));
 
         return response()->json(['status' => 'Message sent']);
     }
