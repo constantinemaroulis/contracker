@@ -100,6 +100,24 @@ CREATE TABLE `contracker_jobs_location` (
   CONSTRAINT `contracker_jobs_location_job_id_foreign` FOREIGN KEY (`job_id`) REFERENCES `contracker_jobs` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `contracker_messages`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `contracker_messages` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `conversation_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sender_id` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `receiver_id` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `message` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `read_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `contracker_messages_conversation_id_index` (`conversation_id`),
+  KEY `contracker_messages_sender_id_index` (`sender_id`),
+  KEY `contracker_messages_receiver_id_index` (`receiver_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `failed_jobs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -216,3 +234,4 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (8,'2025_05_30_0117
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (9,'2025_05_30_011752_create_contracker_jobs_geofence',6);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (10,'2025_06_03_202949_add_last_seen_to_devices_table',7);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (11,'2025_06_03_215341_add_device_metadata_to_contracker_devices_table',8);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (12,'2025_06_06_195433_create_contracker_messages_table',9);
