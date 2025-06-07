@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import './echo';
 import BroadcastConnectionStatus from './Components/BroadcastConnectionStatus';
 import RemoteChatManager from './Components/RemoteChatManager';
+import ChatManager from './Components/ChatManager';
 
 function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -37,7 +38,7 @@ function useDeviceHeartbeat() {
         }
     };
     sendPing();
-    const interval = setInterval(sendPing, 60000);
+    const interval = setInterval(sendPing, 10000);
     return () => clearInterval(interval);
   }, [uuid, isOnline]);
 }
@@ -76,16 +77,16 @@ window.addEventListener('load', () => {
 
 const appName = import.meta.env.VITE_APP_NAME || 'Contracker';
 
-function AppWrapper({ children }) {
+function AppWrapper({ children, auth }) { // Accept auth as a prop
     useDeviceHeartbeat();
     return (
         <>
             {children}
-            <RemoteChatManager /> {/* 👈 Add the manager here */}
+            {/* Pass auth down to the ChatManager */}
+            <ChatManager auth={auth} />
             <BroadcastConnectionStatus />
         </>
     );
-    return children;
 }
 
 createInertiaApp({
@@ -95,10 +96,13 @@ createInertiaApp({
   setup({ el, App, props }) {
     const root = createRoot(el);
     root.render(
-        <AppWrapper>
-            <App {...props} />
-            <BroadcastConnectionStatus />
-        </AppWrapper>
+
+            <AppWrapper auth={props.initialPage.props.auth}>
+                <App {...props} />
+                <BroadcastConnectionStatus />
+            </AppWrapper>
+
+
     );
   },
   progress: {
