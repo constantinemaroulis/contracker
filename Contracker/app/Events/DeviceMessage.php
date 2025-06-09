@@ -21,6 +21,7 @@ class DeviceMessage implements ShouldBroadcast, ShouldQueue
      * @var string
      */
     public $connection = 'sync';
+    public $queue = 'broadcasts';
 
     public $uuid;
     public $message;

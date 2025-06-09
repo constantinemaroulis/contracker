@@ -25,14 +25,15 @@ class DeviceCommand implements ShouldBroadcast, ShouldQueue
      *
      * @var string
      */
-    public $connection = 'sync';
+    public string $connection = 'sync';
 
     /**
      * The public properties that will be serialized and broadcast.
      */
     public $uuid;
-    public $command;
-    public $payload;
+    public string $command;
+    public array $payload;
+    public string $queue = 'broadcasts';
 
     /**
      * Create a new event instance.
@@ -41,7 +42,7 @@ class DeviceCommand implements ShouldBroadcast, ShouldQueue
      * @param string $command
      * @param array $payload
      */
-    public function __construct($uuid, $command, $payload = [])
+    public function __construct($uuid, $command, array $payload)
     {
         $this->uuid = $uuid;
         $this->command = $command;

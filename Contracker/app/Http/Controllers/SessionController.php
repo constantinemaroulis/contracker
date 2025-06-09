@@ -25,8 +25,22 @@ class SessionController extends Controller
 {
     public function store(Request $request)
     {
-        $request->session()->put('key', $request->input('value'));
-        return response()->json(['status' => 'stored']);
+        $validated = $request->validate([
+            'uuid' => 'required|uuid',
+            'message' => 'required|string|max:255',
+        ]);
+
+        $device = ContrackerDevice::where('uuid', $validated['uuid'])->firstOrFail();
+
+        // Broadcast a command using the updated Event structure
+        broadcast(new DeviceCommand(
+            $device->uuid,
+            'message', // The command
+            ['message' => $validated['message']] // The payload
+        ));
+
+        return response()->json(['message' => 'Command sent to device.']);
+    
     }
 
     public function get(Request $request)
@@ -76,6 +90,14 @@ class SessionController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json(['error' => 'Device not found!'], 404);
         }
+    }
+
+    /**
+     * Get the public IP address of the incoming request.
+     */
+    public function getDeviceIp(Request $request): JsonResponse
+    {
+        return response()->json(['ip' => $request->ip()]);
     }
 
     public function getDeviceDiff(Request $request, $uuid)
@@ -190,7 +212,8 @@ class SessionController extends Controller
             'device_details',
         ]));
 
-        return response()->json(['success' => true, 'device' => $device]);
+        // return response()->json(['success' => true, 'device' => $device]);
+        return back()->with('success', 'Device details updated successfully!');
     }
 
 
