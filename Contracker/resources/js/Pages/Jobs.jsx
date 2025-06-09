@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link } from '@inertiajs/react'; // Correct import for Inertia Link
+import AppLayout from '@/Layouts/AppLayout';
 
 export default function Jobs() {
     const [jobs, setJobs] = useState([]);
@@ -21,6 +22,9 @@ export default function Jobs() {
     }, []); // Empty dependency array means this effect runs once after the initial render
 
     return (
+        <AppLayout
+                    header={<h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Jobs</h2>}
+                >
         <div className="container mx-auto p-4"> {/* Added some basic Tailwind classes for spacing */}
             <h2 className="text-2xl font-bold mb-4">Jobs List</h2> {/* Increased text size and added margin-bottom */}
             {jobs.length > 0 ? (
@@ -58,5 +62,6 @@ export default function Jobs() {
                 <p>No jobs to display.</p> // Message when no jobs are loaded
             )}
         </div>
+        </AppLayout>
     );
 }

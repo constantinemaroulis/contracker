@@ -23,6 +23,8 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/devices', [SessionController::class, 'listDevices'])->name('devices.list');
+
 // Authenticated User Routes
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
@@ -61,13 +63,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::post('/devices/send-message', [MessageController::class, 'send'])->name('devices.message.send');
 Route::post('/session/device/command/{uuid}', [SessionController::class, 'sendDeviceCommand'])
     ->name('session.device.command');
+    Route::get('/session/device/ip', [SessionController::class, 'getDeviceIp'])->name('session.device.ip');
 
 Route::middleware('web')->group(function () {
     // Device Registration & Data
     Route::post('/session/register-device', [SessionController::class, 'registerDevice'])->name('session.registerDevice');
     Route::get('/session/device/{uuid}', [SessionController::class, 'getDevice'])->name('session.getDevice');
     Route::get('/session/device-diff/{uuid}', [SessionController::class, 'getDeviceDiff'])->name('session.getDeviceDiff');
-    Route::post('/session/device/{uuid}/updateDeviceName', [SessionController::class, 'updateDeviceName'])->name('session.device.updateDeviceName');
+    Route::post('/session/device/updateDeviceName/{uuid}', [SessionController::class, 'updateDeviceName'])->name('session.device.updateDeviceName');
 
     // Device Heartbeat
     Route::post('/session/device/ping', function (\Illuminate\Http\Request $request) {
@@ -79,7 +82,9 @@ Route::middleware('web')->group(function () {
     })->name('session.device.ping');
 
     // Other Session/Job routes
-    Route::get('/session/deviceip', [SessionController::class, 'getDeviceIp'])->name('session.device.ip'); // Note: Added getDeviceIp method assumption
+
+    
+
     Route::get('/session/jobs', [SessionController::class, 'getJobs'])->name('session.getJobs');
     Route::get('/session/job-location/{jobId}', [SessionController::class, 'getJobLocation'])->name('session.getJobLocation');
     Route::post('/session/save-geofence', [SessionController::class, 'saveGeofence'])->name('session.saveGeofence');

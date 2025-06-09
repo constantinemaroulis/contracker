@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import PrimaryButton from './PrimaryButton';
 import TextInput from './TextInput';
-import { router } from '@inertiajs/react'; // Keep router, remove usePage
+import { router } from '@inertiajs/react';
 
-const ChatInput = ({ uuid, auth, onMessageSent }) => { // Accept 'auth' as a prop
+const ChatInput = ({ uuid, auth, onMessageSent }) => {
     const [message, setMessage] = useState('');
-    // const { auth } = usePage().props; // REMOVE THIS LINE
 
     const sendMessage = async (e) => {
         e.preventDefault();
@@ -20,7 +19,7 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => { // Accept 'auth' as a pro
         }
 
         onMessageSent(trimmedMessage);
-        setMessage(''); // Clear input
+        setMessage('');
 
         try {
             await axios.post(route('session.device.command', { uuid }), {
