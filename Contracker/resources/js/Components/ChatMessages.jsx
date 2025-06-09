@@ -12,6 +12,12 @@ const ChatMessages = ({ messages = [] }) => {
                     <div className={`py-2 px-3 rounded-lg max-w-[80%] break-words ${!msg.isReply ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white'}`}>
                         <p className="text-sm">{msg.text}</p>
                     </div>
+                    {/* Render the timestamp if it exists */}
+                    {msg.timestamp && (
+                        <div className="text-xs text-gray-400 mt-1 px-1">
+                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        </div>
+                    )}
                 </div>
             ))}
         </div>

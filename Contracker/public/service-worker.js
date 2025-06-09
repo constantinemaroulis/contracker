@@ -1,25 +1,46 @@
-// This service worker caches the root and manifest.json files
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open('contracker-cache').then((cache) => {
-      return cache.addAll(['/', '/manifest.json']);
-    })
+const CACHE_NAME = 'contracker-cache-v1';
+const URLS_TO_CACHE = [
+  '/',
+  '/manifest.json'
+];
+
+// Install the service worker and cache the app shell
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Opened cache');
+        return cache.addAll(URLS_TO_CACHE);
+      })
   );
 });
 
+// Handle fetch events
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
 
-// This service worker intercepts fetch requests and serves cached responses
-self.addEventListener('fetch', (e) => {
-  const url = new URL(e.request.url);
-
-  // Bypass service worker for cross-origin requests
-  if (url.origin !== location.origin) {
-    return; // this exits the fetch event listener correctly
+  // --- IMPORTANT ---
+  // 1. Don't intercept POST requests or API calls
+  // 2. Only handle GET requests for navigation
+  if (request.method !== 'GET' || !request.url.startsWith(self.location.origin)) {
+    return; // Let the browser handle it
   }
-  
-  e.respondWith(
-    caches.match(e.request).then((response) => {
-      return response || fetch(e.request);
+
+  event.respondWith(
+    caches.match(request).then((response) => {
+      // Cache hit - return response from cache
+      if (response) {
+        return response;
+      }
+
+      // Not in cache - fetch from network, and maybe cache it
+      return fetch(request).then((networkResponse) => {
+          // You can add logic here to cache new assets if you want
+          return networkResponse;
+        }
+      ).catch(() => {
+        // Handle offline case if needed
+      });
     })
   );
 });

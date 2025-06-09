@@ -21,13 +21,13 @@ const RemoteChatManager = () => {
             const data = event.data || event; // Handle different event structures
             if (data.command === 'message' && data.payload && data.payload.message) {
                 // Add the received message to the state and open the modal
-                setMessages(prev => [...prev, { sender: 'device', text: data.payload.message }]);
+                setMessages(prev => [...prev, { sender: 'Admin', text: data.payload.message, isReply: true, timestamp: data.timestamp || new Date().toISOString() }]);
                 setModalOpen(true);
             }
         };
-        
+
         channel.listen('.DeviceCommand', handleCommand);
-        
+
         // As a fallback, also listen for the fully qualified class name
         channel.listen('App\\Events\\DeviceCommand', handleCommand);
 
@@ -36,10 +36,10 @@ const RemoteChatManager = () => {
             channel.stopListening('App\\Events\\DeviceCommand');
         };
     }, [uuid]);
-    
+
     // Add the user's own reply to the message list for optimistic UI
     const handleSendMessage = useCallback((messageText) => {
-        setMessages(prev => [...prev, { sender: 'you', text: messageText }]);
+        setMessages(prev => [...prev, { sender: 'You', text: messageText, isReply: false, timestamp: new Date().toISOString() }]);
     }, []);
 
     const closeModal = () => {

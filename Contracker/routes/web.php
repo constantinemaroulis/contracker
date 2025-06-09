@@ -59,6 +59,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Handles messages sent FROM a device TO the dashboard
 Route::post('/devices/send-message', [MessageController::class, 'send'])->name('devices.message.send');
+Route::post('/session/device/command/{uuid}', [SessionController::class, 'sendDeviceCommand'])
+    ->name('session.device.command');
 
 Route::middleware('web')->group(function () {
     // Device Registration & Data
@@ -82,8 +84,7 @@ Route::middleware('web')->group(function () {
     Route::get('/session/job-location/{jobId}', [SessionController::class, 'getJobLocation'])->name('session.getJobLocation');
     Route::post('/session/save-geofence', [SessionController::class, 'saveGeofence'])->name('session.saveGeofence');
 
-    Route::post('/session/device/command/{uuid}', [SessionController::class, 'sendDeviceCommand'])
-    ->name('session.device.command');
+
 
 });
 
