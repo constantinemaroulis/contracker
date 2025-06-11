@@ -63,10 +63,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::post('/devices/send-message', [MessageController::class, 'send'])->name('devices.message.send');
 Route::post('/session/device/command/{uuid}', [SessionController::class, 'sendDeviceCommand'])
     ->name('session.device.command');
-<<<<<<< Updated upstream
     Route::get('/session/device/ip', [SessionController::class, 'getDeviceIp'])->name('session.device.ip');
-=======
->>>>>>> Stashed changes
 
 Route::middleware('web')->group(function () {
     // Device Registration & Data

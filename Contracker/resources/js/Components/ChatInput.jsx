@@ -2,13 +2,10 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import PrimaryButton from './PrimaryButton';
 import TextInput from './TextInput';
+import { router } from '@inertiajs/react';
 
-import { router } from '@inertiajs/react'; // Keep router, remove usePage
-
-const ChatInput = ({ uuid, auth, onMessageSent }) => { // Accept 'auth' as a prop
+const ChatInput = ({ uuid, auth, onMessageSent }) => {
     const [message, setMessage] = useState('');
-    // const { auth } = usePage().props; // REMOVE THIS LINE
-
 
     const sendMessage = async (e) => {
         e.preventDefault();
