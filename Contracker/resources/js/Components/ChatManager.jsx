@@ -56,6 +56,8 @@ const ChatManager = ({ auth }) => {
 
     // Effect to fetch all devices to get their info
     useEffect(() => {
+        if (!auth.user) return;
+
         axios.get(route('devices.list'))
             .then(res => setDevices(res.data.devices || []))
             .catch(err => console.error('Failed to load initial devices', err));
