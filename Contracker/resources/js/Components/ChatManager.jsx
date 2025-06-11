@@ -46,7 +46,7 @@ const ChatManager = ({ auth }) => {
 
     // --- LOGIC FOR ADMIN ---
     useEffect(() => {
-        
+        if (!auth.user) return;
 
         axios.get(route('devices.list'))
             .then(res => setDevices(res.data.devices || []))
