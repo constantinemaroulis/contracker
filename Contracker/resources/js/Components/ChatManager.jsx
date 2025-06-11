@@ -1,21 +1,41 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import PersistentChatWindow from './PersistentChatWindow';
 import { usePage } from '@inertiajs/react';
 import axios from 'axios';
+import { route } from 'ziggy-js';
 
 const ChatManager = ({ auth }) => {
     const [activeChats, setActiveChats] = useState([]);
     const [devices, setDevices] = useState([]);
 
-    const openChat = useCallback((device) => {
+    const requestNotificationPermission = () => {
+        if ('Notification' in window && Notification.permission !== 'granted') {
+            Notification.requestPermission();
+        }
+    };
+
+    const sendNotification = (title, body) => {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(title, { body });
+        }
+    };
+
+    const openChat = (device) => {
         setActiveChats(prevChats => {
             const chatExists = prevChats.find(c => c.uuid === device.uuid);
             if (chatExists) {
-                return [{ ...chatExists, minimized: false }, ...prevChats.filter(c => c.uuid !== device.uuid)];
+                return [
+                    { ...chatExists, minimized: false },
+                    ...prevChats.filter(c => c.uuid !== device.uuid)
+                ];
             }
-            return [{ ...device, messages: [], minimized: false }, ...prevChats];
+            return [
+                { ...device, messages: [], minimized: false },
+                ...prevChats
+            ];
         });
-    }, []);
+    };
 
     const closeChat = (uuid) => {
         setActiveChats(prev => prev.filter(c => c.uuid !== uuid));
@@ -26,34 +46,36 @@ const ChatManager = ({ auth }) => {
     };
 
     const addMessage = useCallback((uuid, message) => {
-        // Find the full device object to ensure the chat window has a name
-        const device = devices.find(d => d.uuid === uuid);
         setActiveChats(prev => {
             const chatExists = prev.find(c => c.uuid === uuid);
-            // If message arrives for a chat that isn't open, open it.
-            if (!chatExists && device) {
-                // Use the openChat function to avoid duplicating logic
-                openChat(device);
+            if (!chatExists) {
+                const device = devices.find(d => d.uuid === uuid);
+                if(device) openChat(device);
             }
+
+            sendNotification(message.sender, message.text);
+
             return prev.map(c =>
                 c.uuid === uuid
                     ? { ...c, messages: [...c.messages, message], minimized: false }
                     : c
             );
         });
-    }, [devices, openChat]);
+    }, [devices]);
 
-
-    // --- LOGIC FOR ADMIN ---
     useEffect(() => {
-        if (!auth.user) return;
-
+        requestNotificationPermission();
         axios.get(route('devices.list'))
             .then(res => setDevices(res.data.devices || []))
             .catch(err => console.error('Failed to load initial devices', err));
+    }, []);
 
-        if (devices.length > 0) {
-            devices.forEach(device => {
+    useEffect(() => {
+        if (devices.length === 0 || !auth.user) return;
+        const activeListeners = {};
+
+        devices.forEach(device => {
+            if (!activeListeners[device.uuid]) {
                 const channel = window.Echo.private(`device.${device.uuid}`);
                 channel.listen('.DeviceMessage', (e) => {
                     addMessage(device.uuid, {
@@ -63,49 +85,40 @@ const ChatManager = ({ auth }) => {
                         timestamp: new Date()
                     });
                 });
-            });
+                activeListeners[device.uuid] = channel;
+            }
+        });
 
-            window.chatManager = { openChat, addMessage };
+        window.chatManager = { openChat, addMessage };
 
-            // **THIS IS THE CORRECTED CLEANUP FUNCTION**
-            return () => {
-                // We loop through the devices again and leave each channel by its name.
-                // This correctly accesses the 'device' variable within this scope.
-                devices.forEach(device => {
-                    window.Echo.leave(`private-device.${device.uuid}`);
-                });
-                delete window.chatManager;
-            };
-        }
-    }, [auth.user, devices, addMessage, openChat]);
+        return () => {
+            Object.values(activeListeners).forEach(channel => window.Echo.leave(channel.name));
+            delete window.chatManager;
+        };
+    }, [devices, auth.user, addMessage]);
 
-
-    // --- LOGIC FOR REMOTE DEVICE ---
     useEffect(() => {
         const uuid = localStorage.getItem('device_uuid');
-        if (auth.user || !uuid) return;
+        if (!uuid) return;
 
         const channel = window.Echo.private(`device.${uuid}`);
         channel.listen('.DeviceCommand', (event) => {
             console.log(`Received message event for device ${uuid}:`, event);
-            if (event.command === 'message' && event.payload && event.payload.message) {
-                const deviceForChat = { uuid, name: 'Admin' };
-                // Using openChat ensures the window is created correctly
-                openChat(deviceForChat);
+            const data = event.data || event;
+            if (data.command === 'message' && data.payload && data.payload.message) {
+                const device = { uuid, name: 'Admin' }; // Create a temporary device object for the admin
+                openChat(device);
                 addMessage(uuid, {
                     sender: 'Admin',
-                    text: event.payload.message,
+                    text: data.payload.message,
                     isReply: true,
                     timestamp: new Date()
                 });
             }
         });
-        // This cleanup function was already correct.
-        return () => {
-            window.Echo.leave(`private-device.${uuid}`);
-        };
-    }, [auth.user, addMessage, openChat]);
 
+        return () => { window.Echo.leave(`device.${uuid}`); };
+    }, [auth.user, addMessage]);
 
     return (
         <div className="fixed bottom-0 right-0 z-50 flex flex-row-reverse items-end p-4 space-x-4 space-x-reverse">
