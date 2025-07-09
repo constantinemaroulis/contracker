@@ -58,24 +58,25 @@ const ChatManager = ({ auth }) => {
         let device = devices.find(d => d.uuid === uuid);
 
         setActiveChats(prev => {
-            let chatExists = prev.find(c => c.uuid === uuid);
-            if (!chatExists) {
-                // Fallback device object if not found in list
+            let chat = prev.find(c => c.uuid === uuid);
+            if (!chat) {
                 if (!device) {
+                    // Fallback device object if not found in list
                     device = { uuid, name: message.isReply ? 'Admin' : 'Device' };
                 }
-                prev = [{ ...device, messages: [], minimized: false }, ...prev];
-                chatExists = true;
+                chat = { ...device, messages: [], minimized: false };
+                prev = [chat, ...prev];
             }
 
-            // Append the new message to the appropriate chat's message list
             return prev.map(c => {
                 if (c.uuid === uuid) {
-                    // Assign an ID if not already present
+                    // Avoid duplicates based on ID
+                    if (message.id && c.messages.some(m => m.id === message.id)) {
+                        return c;
+                    }
                     if (!message.id) {
                         message.id = generateId();
                     }
-                    // Default status for incoming messages is 'delivered' (they reached this client)
                     if (message.isReply) {
                         message.status = message.status || 'delivered';
                     }
@@ -183,6 +184,19 @@ const ChatManager = ({ auth }) => {
                             });
                             return { ...chat, messages: updatedMessages };
                         }));
+                    }
+                    if (e.command === 'message' && e.payload && e.payload.message) {
+                        console.log('Received admin message for device', device.uuid, e);
+                        const msg = {
+                            id: e.payload.messageId || generateId(),
+                            sender: 'Admin',
+                            text: e.payload.message,
+                            isReply: true,
+                            timestamp: new Date(),
+                            status: 'delivered'
+                        };
+                        openChat(device);
+                        addMessage(device.uuid, msg);
                     }
                     if (e.command === 'edit' && e.payload) {
                         const { messageId, newText } = e.payload;
