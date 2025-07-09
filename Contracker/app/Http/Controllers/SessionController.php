@@ -248,7 +248,7 @@ class SessionController extends Controller
 
         if ($validated['command'] === 'typing') {
             // Admin typing indicator
-            broadcast(new DeviceCommand($uuid, 'typing', [], $senderUuid));
+            broadcast(new DeviceCommand($uuid, 'typing', ['recipient_uuid' => $uuid], $senderUuid));
             return response()->json(['status' => 'Typing signal broadcast']);
         }
 
