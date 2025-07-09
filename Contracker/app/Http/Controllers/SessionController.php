@@ -244,7 +244,8 @@ class SessionController extends Controller
             'sender_uuid' => 'sometimes|string'
         ]);
 
-        $senderUuid = $validated['sender_uuid'] ?? null;
+        $senderUuid = $validated['sender_uuid'] ?? ($request->user()->id ?? 'admin');
+
 
         if ($validated['command'] === 'typing') {
             // Admin typing indicator

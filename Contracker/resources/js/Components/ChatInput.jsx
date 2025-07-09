@@ -26,7 +26,7 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
         setMessage('');
         try {
             // Send the message to the backend (DeviceCommand with command 'message')
-            const senderUuid = localStorage.getItem('device_uuid');
+            const senderUuid = localStorage.getItem('device_uuid') || 'admin';
             await axios.post(route('session.device.command', { uuid }), {
                 sender_uuid: senderUuid,
                 command: 'message',
@@ -57,7 +57,8 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
         // Notify that the admin is typing (throttle to send infrequently)
         if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
             try {
-                const senderUuid = localStorage.getItem('device_uuid');
+                const senderUuid = localStorage.getItem('device_uuid') || 'admin';
+
                 axios.post(route('session.device.command', { uuid }), {
                     sender_uuid: senderUuid,
                     command: 'typing',
