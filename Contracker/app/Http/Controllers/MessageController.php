@@ -30,13 +30,13 @@ class MessageController extends Controller
 
         if (!empty($validated['typing'])) {
             // Device is notifying that it is typing
-            broadcast(new DeviceCommand($deviceUuid, 'typing', ['recipient_uuid' => $recipientUuid], $senderUuid));
+            event(new DeviceCommand($deviceUuid, 'typing', ['recipient_uuid' => $recipientUuid], $senderUuid));
             return response()->json(['status' => 'Typing signal sent']);
         }
 
         if (!empty($validated['ack']) && isset($validated['messageId'], $validated['status'])) {
             // This is an acknowledgment from a device that a message was delivered/read.
-            broadcast(new DeviceCommand($deviceUuid, 'ack', [
+            event(new DeviceCommand($deviceUuid, 'ack', [
                 'messageId' => $validated['messageId'],
                 'status' => $validated['status'],
                 'recipient_uuid' => $recipientUuid
@@ -53,7 +53,7 @@ class MessageController extends Controller
         }
 
         // Broadcast DeviceMessage event to admin listeners
-        broadcast(new DeviceMessage($deviceUuid, $text, $senderName, $validated['messageId'] ?? null, $senderUuid, $recipientUuid));
+        event(new DeviceMessage($deviceUuid, $text, $senderName, $validated['messageId'] ?? null, $senderUuid, $recipientUuid));
 
         // Store the message in the database for history/search (as not read yet by admin)
         \Illuminate\Support\Facades\DB::table('contracker_messages')->insert([
