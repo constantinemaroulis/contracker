@@ -250,16 +250,16 @@ class SessionController extends Controller
 
         if ($validated['command'] === 'typing') {
             // Admin typing indicator
-            event(new DeviceCommand($uuid, 'typing', ['recipient_uuid' => $uuid], $senderUuid));
+            broadcast(new DeviceCommand($uuid, 'typing', ['recipient_uuid' => $uuid], $senderUuid));
             return response()->json(['status' => 'Typing signal broadcast']);
         }
 
-        // If admin is sending a chat message  if ($validated['command'] === 'message' && isset($validated['payload']['message'])) {
-        if ($validated['command'] === 'message') {
+        // If admin is sending a chat message
+        if ($validated['command'] === 'message' && isset($validated['payload']['message'])) {
             $messageText = $validated['payload']['message'];
             $messageId = $validated['payload']['messageId'] ?? null;
             // Broadcast chat message to the device's channel
-            event(new DeviceCommand($uuid, 'message', [
+            broadcast(new DeviceCommand($uuid, 'message', [
                 'message' => $messageText,
                 'messageId' => $messageId,
                 'recipient_uuid' => $uuid
@@ -279,7 +279,7 @@ class SessionController extends Controller
         }
 
         // If this is an acknowledgment or other command (typing, ack, etc.)
-        event(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? [], $senderUuid));
+        broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? [], $senderUuid));
         return response()->json(['status' => 'Command sent']);
     }
 

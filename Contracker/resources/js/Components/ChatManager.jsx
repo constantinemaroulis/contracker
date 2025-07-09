@@ -32,7 +32,7 @@ const ChatManager = ({ auth }) => {
             if (chatExists) {
                 return prevChats.map(c =>
                     c.uuid === device.uuid
-                        ? { ...c, minimized: false }
+                        ? { ...c, minimized: false, name: device.name || c.name }
                         : c
                 );
             }
