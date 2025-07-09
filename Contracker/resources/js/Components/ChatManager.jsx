@@ -84,15 +84,18 @@ const ChatManager = ({ auth }) => {
             // Send acknowledgment back for delivery/read
             try {
                 // Send a delivery confirmation (and immediately send read receipt)
+                const senderUuid = localStorage.getItem('device_uuid');
                 axios.post(route('session.device.command', { uuid }), {
+                    sender_uuid: senderUuid,
                     command: 'ack',
-                    payload: { messageId: message.id, status: 'delivered' }
+                    payload: { messageId: message.id, status: 'delivered', recipient_uuid: uuid }
                 });
                 // Optionally, send a separate read receipt after a short delay
                 setTimeout(() => {
                     axios.post(route('session.device.command', { uuid }), {
+                        sender_uuid: senderUuid,
                         command: 'ack',
-                        payload: { messageId: message.id, status: 'read' }
+                        payload: { messageId: message.id, status: 'read', recipient_uuid: uuid }
                     });
                 }, 1000);
             } catch (error) {
@@ -247,9 +250,11 @@ const ChatManager = ({ auth }) => {
                             // Attempt to resend
                             if (auth.user) {
                                 // Admin resending a failed message
+                                const senderUuid = localStorage.getItem('device_uuid');
                                 axios.post(route('session.device.command', { uuid: chat.uuid }), {
+                                    sender_uuid: senderUuid,
                                     command: 'message',
-                                    payload: { message: msg.text, messageId: msg.id }
+                                    payload: { message: msg.text, messageId: msg.id, recipient_uuid: chat.uuid }
                                 }).then(() => {
                                     // Update status to "sent" on success
                                     setActiveChats(prev => prev.map(c => {
@@ -267,6 +272,8 @@ const ChatManager = ({ auth }) => {
                                 // Device resending a failed message
                                 axios.post(route('devices.message.send'), {
                                     uuid: chat.uuid,
+                                    sender_uuid: localStorage.getItem('device_uuid'),
+                                    recipient_uuid: chat.uuid,
                                     message: msg.text,
                                     messageId: msg.id
                                 }).then(() => {
