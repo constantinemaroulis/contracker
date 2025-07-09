@@ -84,7 +84,7 @@ const ChatManager = ({ auth }) => {
             // Send acknowledgment back for delivery/read
             try {
                 // Send a delivery confirmation (and immediately send read receipt)
-                const senderUuid = localStorage.getItem('device_uuid') || 'admin';
+                const senderUuid = localStorage.getItem('device_uuid');
                 axios.post(route('session.device.command', { uuid }), {
                     sender_uuid: senderUuid,
                     command: 'ack',
@@ -250,7 +250,7 @@ const ChatManager = ({ auth }) => {
                             // Attempt to resend
                             if (auth.user) {
                                 // Admin resending a failed message
-                                const senderUuid = localStorage.getItem('device_uuid') || 'admin';
+                                const senderUuid = localStorage.getItem('device_uuid');
                                 axios.post(route('session.device.command', { uuid: chat.uuid }), {
                                     sender_uuid: senderUuid,
                                     command: 'message',
