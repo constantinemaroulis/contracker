@@ -3,6 +3,7 @@ import axios from 'axios';
 import PrimaryButton from './PrimaryButton';
 import TextInput from './TextInput';
 import { router } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 
 const ChatInput = ({ uuid, auth, onMessageSent }) => {
     const [message, setMessage] = useState('');

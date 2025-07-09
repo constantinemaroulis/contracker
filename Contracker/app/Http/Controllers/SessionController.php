@@ -254,8 +254,8 @@ class SessionController extends Controller
             return response()->json(['status' => 'Typing signal broadcast']);
         }
 
-        // If admin is sending a chat message  if ($validated['command'] === 'message' && isset($validated['payload']['message'])) {
-        if ($validated['command'] === 'message') {
+        // If admin is sending a chat message
+        if ($validated['command'] === 'message' && isset($validated['payload']['message'])) {
             $messageText = $validated['payload']['message'];
             $messageId = $validated['payload']['messageId'] ?? null;
             // Broadcast chat message to the device's channel
@@ -264,6 +264,8 @@ class SessionController extends Controller
                 'messageId' => $messageId,
                 'recipient_uuid' => $uuid
             ], $senderUuid));
+            // Also broadcast to other admins so everyone sees the sent message
+            broadcast(new DeviceMessage($uuid, $messageText, 'Admin', $messageId, $senderUuid, $uuid));
             $senderId = $senderUuid;
             // Store in DB for history (sender is admin, receiver is device)
             \Illuminate\Support\Facades\DB::table('contracker_messages')->insert([

@@ -32,7 +32,7 @@ const ChatManager = ({ auth }) => {
             if (chatExists) {
                 return prevChats.map(c =>
                     c.uuid === device.uuid
-                        ? { ...c, minimized: false }
+                        ? { ...c, minimized: false, name: device.name || c.name }
                         : c
                 );
             }
@@ -54,26 +54,37 @@ const ChatManager = ({ auth }) => {
     };
 
     const addMessage = useCallback((uuid, message) => {
-
-
-        const device = devices.find(d => d.uuid === uuid);
+        // Look up the device info (may be undefined if not yet loaded)
+        let device = devices.find(d => d.uuid === uuid);
 
         setActiveChats(prev => {
-            const chatExists = prev.find(c => c.uuid === uuid);
-            if (!chatExists && device) {
-                // If the chat doesn't exist, create a new one with the device info
-                prev = [{ ...device, messages: [], minimized: false },
-                    ...prev];
+            let chat = prev.find(c => c.uuid === uuid);
+            if (!chat) {
+                if (!device) {
+                    // Fallback device object if not found in list
+                    device = { uuid, name: message.isReply ? 'Admin' : 'Device' };
+                }
+                chat = { ...device, messages: [], minimized: false };
+                prev = [chat, ...prev];
             }
 
-            // Append the new message to the appropriate chat's message list
             return prev.map(c => {
                 if (c.uuid === uuid) {
-                    // Assign an ID if not already present
+                    if (message.id) {
+                        const idx = c.messages.findIndex(m => m.id === message.id);
+                        if (idx !== -1) {
+                            // Update status if new info is provided
+                            if (message.status && c.messages[idx].status !== message.status) {
+                                const updated = [...c.messages];
+                                updated[idx] = { ...c.messages[idx], status: message.status };
+                                return { ...c, messages: updated };
+                            }
+                            return c;
+                        }
+                    }
                     if (!message.id) {
                         message.id = generateId();
                     }
-                    // Default status for incoming messages is 'delivered' (they reached this client)
                     if (message.isReply) {
                         message.status = message.status || 'delivered';
                     }
@@ -117,38 +128,7 @@ const ChatManager = ({ auth }) => {
             .catch(err => console.error('Failed to load initial devices', err));
     }, []);
 
-    useEffect(() => {
-        if (devices.length === 0 || !auth.user) return;
-        const activeListeners = {};
 
-
-        if (devices.length > 0) {
-            devices.forEach(device => {
-                const channel = window.Echo.private(`device.${device.uuid}`);
-                channel.listen('.DeviceMessage', (e) => {
-                    addMessage(device.uuid, {
-                        sender: e.senderName || 'Device',
-                        text: e.message,
-                        isReply: true,
-                        timestamp: new Date()
-                    });
-                });
-            });
-
-        window.chatManager = { openChat, addMessage };
-
-
-            // **THIS IS THE CORRECTED CLEANUP FUNCTION**
-            return () => {
-                // We loop through the devices again and leave each channel by its name.
-                // This correctly accesses the 'device' variable within this scope.
-                devices.forEach(device => {
-                    window.Echo.leave(`private-device.${device.uuid}`);
-                });
-                delete window.chatManager;
-            };
-        }
-    }, [auth.user, devices, addMessage, openChat]);
 
         // --- LOGIC FOR ADMIN (subscribe to device channels) ---
     useEffect(() => {
@@ -158,24 +138,30 @@ const ChatManager = ({ auth }) => {
             .then(res => setDevices(res.data.devices || []))
             .catch(err => console.error('Failed to load device list', err));
         if (devices.length > 0) {
-            devices.forEach(device => {
+            // Subscribe only to online devices to reduce unused authorizations
+            devices.filter(d => d.online).forEach(device => {
                 const channel = window.Echo.private(`device.${device.uuid}`);
-                // Listen for messages from devices
+                // Listen for messages from devices or other admins
                 channel.listen('.DeviceMessage', (e) => {
+                    console.log('Received DeviceMessage', device.uuid, e);
+                    const incoming = e.senderUuid === device.uuid;
                     const msg = {
                         id: e.messageId || generateId(),
-                        sender: e.senderName || 'Device',
+                        sender: e.senderName || (incoming ? 'Device' : 'Admin'),
                         text: e.message,
-                        isReply: true,       // incoming to admin
+                        isReply: incoming,
                         timestamp: new Date(),
-                        status: 'delivered'  // delivered to admin client
+                        status: incoming ? 'delivered' : 'sent'
                     };
+                    // Ensure the chat is visible when a new message arrives
+                    openChat(device);
                     addMessage(device.uuid, msg);
                 });
                 // Listen for device acknowledgments (read/delivered receipts or typing indicators)
                 channel.listen('.DeviceCommand', (e) => {
                     if (!e.command) return;
                     if (e.command === 'typing' && e.senderUuid === device.uuid) {
+                        console.log('Typing from device', device.uuid);
                         // Device typing indicator
                         setActiveChats(prev => prev.map(c =>
                             c.uuid === device.uuid ? { ...c, typing: true } : c
@@ -238,7 +224,7 @@ const ChatManager = ({ auth }) => {
             window.chatManager = { openChat, addMessage };
             // Cleanup on unmount: leave channels and remove global ref
             return () => {
-                devices.forEach(device => {
+                devices.filter(d => d.online).forEach(device => {
                     window.Echo.leave(`private-device.${device.uuid}`);
                 });
                 delete window.chatManager;
@@ -349,6 +335,7 @@ const ChatManager = ({ auth }) => {
 
             console.log(`Received command for device ${uuid}:`, event);
             if (event.command === 'message' && event.payload && event.payload.message) {
+                console.log('Received message from admin:', event.payload.message);
                 // Incoming message from Admin
                 const adminName = 'Admin';
                 openChat({ uuid, name: adminName });  // ensure chat window open
@@ -393,6 +380,7 @@ const ChatManager = ({ auth }) => {
             }
 
             if (event.command === 'typing' && event.senderUuid && event.senderUuid !== uuid) {
+                console.log('Typing from admin');
                 // Admin typing indicator
                 openChat({ uuid, name: 'Admin' });
                 setActiveChats(prev => prev.map(c =>

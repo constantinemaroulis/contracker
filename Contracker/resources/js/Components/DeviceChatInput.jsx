@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import PrimaryButton from './PrimaryButton';
 import TextInput from './TextInput';
+import { route } from 'ziggy-js';
 
 const DeviceChatInput = ({ uuid, onMessageSent }) => {
     const [message, setMessage] = useState('');
