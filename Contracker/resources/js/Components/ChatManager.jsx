@@ -170,6 +170,8 @@ const ChatManager = ({ auth }) => {
                         timestamp: new Date(),
                         status: 'delivered'  // delivered to admin client
                     };
+                    // Ensure the chat is visible when a new message arrives
+                    openChat(device);
                     addMessage(device.uuid, msg);
                 });
                 // Listen for device acknowledgments (read/delivered receipts or typing indicators)
