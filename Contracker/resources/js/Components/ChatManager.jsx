@@ -119,38 +119,7 @@ const ChatManager = ({ auth }) => {
             .catch(err => console.error('Failed to load initial devices', err));
     }, []);
 
-    useEffect(() => {
-        if (devices.length === 0 || !auth.user) return;
-        const activeListeners = {};
 
-
-        if (devices.length > 0) {
-            devices.forEach(device => {
-                const channel = window.Echo.private(`device.${device.uuid}`);
-                channel.listen('.DeviceMessage', (e) => {
-                    addMessage(device.uuid, {
-                        sender: e.senderName || 'Device',
-                        text: e.message,
-                        isReply: true,
-                        timestamp: new Date()
-                    });
-                });
-            });
-
-        window.chatManager = { openChat, addMessage };
-
-
-            // **THIS IS THE CORRECTED CLEANUP FUNCTION**
-            return () => {
-                // We loop through the devices again and leave each channel by its name.
-                // This correctly accesses the 'device' variable within this scope.
-                devices.forEach(device => {
-                    window.Echo.leave(`private-device.${device.uuid}`);
-                });
-                delete window.chatManager;
-            };
-        }
-    }, [auth.user, devices, addMessage, openChat]);
 
         // --- LOGIC FOR ADMIN (subscribe to device channels) ---
     useEffect(() => {
@@ -160,10 +129,12 @@ const ChatManager = ({ auth }) => {
             .then(res => setDevices(res.data.devices || []))
             .catch(err => console.error('Failed to load device list', err));
         if (devices.length > 0) {
-            devices.forEach(device => {
+            // Subscribe only to online devices to reduce unused authorizations
+            devices.filter(d => d.online).forEach(device => {
                 const channel = window.Echo.private(`device.${device.uuid}`);
                 // Listen for messages from devices
                 channel.listen('.DeviceMessage', (e) => {
+                    console.log('Received message from device', device.uuid, e);
                     const msg = {
                         id: e.messageId || generateId(),
                         sender: e.senderName || 'Device',
@@ -180,6 +151,7 @@ const ChatManager = ({ auth }) => {
                 channel.listen('.DeviceCommand', (e) => {
                     if (!e.command) return;
                     if (e.command === 'typing' && e.senderUuid === device.uuid) {
+                        console.log('Typing from device', device.uuid);
                         // Device typing indicator
                         setActiveChats(prev => prev.map(c =>
                             c.uuid === device.uuid ? { ...c, typing: true } : c
@@ -242,7 +214,7 @@ const ChatManager = ({ auth }) => {
             window.chatManager = { openChat, addMessage };
             // Cleanup on unmount: leave channels and remove global ref
             return () => {
-                devices.forEach(device => {
+                devices.filter(d => d.online).forEach(device => {
                     window.Echo.leave(`private-device.${device.uuid}`);
                 });
                 delete window.chatManager;
@@ -353,6 +325,7 @@ const ChatManager = ({ auth }) => {
 
             console.log(`Received command for device ${uuid}:`, event);
             if (event.command === 'message' && event.payload && event.payload.message) {
+                console.log('Received message from admin:', event.payload.message);
                 // Incoming message from Admin
                 const adminName = 'Admin';
                 openChat({ uuid, name: adminName });  // ensure chat window open
@@ -397,6 +370,7 @@ const ChatManager = ({ auth }) => {
             }
 
             if (event.command === 'typing' && event.senderUuid && event.senderUuid !== uuid) {
+                console.log('Typing from admin');
                 // Admin typing indicator
                 openChat({ uuid, name: 'Admin' });
                 setActiveChats(prev => prev.map(c =>
