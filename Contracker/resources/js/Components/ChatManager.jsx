@@ -54,16 +54,18 @@ const ChatManager = ({ auth }) => {
     };
 
     const addMessage = useCallback((uuid, message) => {
-
-
-        const device = devices.find(d => d.uuid === uuid);
+        // Look up the device info (may be undefined if not yet loaded)
+        let device = devices.find(d => d.uuid === uuid);
 
         setActiveChats(prev => {
-            const chatExists = prev.find(c => c.uuid === uuid);
-            if (!chatExists && device) {
-                // If the chat doesn't exist, create a new one with the device info
-                prev = [{ ...device, messages: [], minimized: false },
-                    ...prev];
+            let chatExists = prev.find(c => c.uuid === uuid);
+            if (!chatExists) {
+                // Fallback device object if not found in list
+                if (!device) {
+                    device = { uuid, name: message.isReply ? 'Admin' : 'Device' };
+                }
+                prev = [{ ...device, messages: [], minimized: false }, ...prev];
+                chatExists = true;
             }
 
             // Append the new message to the appropriate chat's message list
