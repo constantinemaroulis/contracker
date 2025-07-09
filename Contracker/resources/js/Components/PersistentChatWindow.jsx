@@ -74,7 +74,7 @@ const PersistentChatWindow = ({ chat, auth, onClose, onMinimize, onMessageSent }
     };
 
     return (
-        <div className="w-80 h-[28rem] bg-white dark:bg-gray-800 rounded-t-lg shadow-2xl flex flex-col">
+        <div className={`w-80 ${chat.minimized ? 'max-h-12 overflow-hidden' : 'h-[28rem]'} bg-white dark:bg-gray-800 rounded-t-lg shadow-2xl flex flex-col`}>
             {/* Header */}
             <div onClick={onMinimize} className="flex justify-between items-center p-2 bg-gray-700 dark:bg-gray-900 text-white rounded-t-lg cursor-pointer">
                 <h3 className="font-semibold text-sm truncate">{chat.name || chat.uuid}</h3>

@@ -5,24 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Events\DeviceMessage;
 use App\Events\DeviceCommand;
+use App\Models\ContrackerDevice;
 
 class MessageController extends Controller
 {
-    /*
-    public function send(Request $request)
-    {
-        $validated = $request->validate([
-            'uuid' => 'required|string',
-            'message' => 'required|string',
-        ]);
-
-        $device = ContrackerDevice::where('uuid', $validated['uuid'])->first();
-        $deviceName = $device && $device->name ? $device->name : 'Unknown Device (' . substr($validated['uuid'], 0, 8) . ')';
-
-        broadcast(new DeviceMessage($validated['uuid'], $validated['message'], $deviceName));
-
-        return response()->json(['status' => 'Message sent']);
-    }*/
 
     public function send(Request $request)
     {
@@ -31,25 +17,30 @@ class MessageController extends Controller
             'message' => 'nullable|string',
             'messageId' => 'sometimes|string',
             'ack' => 'sometimes|boolean',
-            'status' => 'sometimes|string'
+            'status' => 'sometimes|string',
+            'sender_uuid' => 'sometimes|string',
+            'recipient_uuid' => 'sometimes|string'
         ]);
 
         $deviceUuid = $validated['uuid'];
         $text = $validated['message'] ?? '';
+        $senderUuid = $validated['sender_uuid'] ?? $deviceUuid;
+        $recipientUuid = $validated['recipient_uuid'] ?? 'admin';
 
         if (!empty($validated['ack']) && isset($validated['messageId'], $validated['status'])) {
             // This is an acknowledgment from a device that a message was delivered/read.
             broadcast(new DeviceCommand($deviceUuid, 'ack', [
                 'messageId' => $validated['messageId'],
-                'status' => $validated['status']
-            ]));
+                'status' => $validated['status'],
+                'recipient_uuid' => $recipientUuid
+            ], $senderUuid));
             return response()->json(['status' => 'ACK broadcast']);
         }
 
         // Within MessageController@send, at top where we handle ACKs:
         if (!empty($validated['ack']) && !empty($validated['typing'])) {
             // Device is notifying that it is typing
-            broadcast(new DeviceCommand($deviceUuid, 'typing', []));
+            broadcast(new DeviceCommand($deviceUuid, 'typing', ['recipient_uuid' => $recipientUuid], $senderUuid));
             return response()->json(['status' => 'Typing signal sent']);
         }
 
@@ -57,18 +48,18 @@ class MessageController extends Controller
         $senderId = $request->input('uuid') ?: 'device'; // Use device UUID as sender ID
         $receiverId = $request->user() ? 'admin' : 'admin'; // In this context, device posts to admin (admin as receiver)
         $senderName = 'Device';
-        if ($device = \App\Models\ContrackerDevice::where('uuid', $deviceUuid)->first()) {
+        if ($device = ContrackerDevice::where('uuid', $deviceUuid)->first()) {
             $senderName = $device->name ?: 'Device';
         }
 
         // Broadcast DeviceMessage event to admin listeners
-        broadcast(new DeviceMessage($deviceUuid, $text, $senderName, $validated['messageId'] ?? null));
+        broadcast(new DeviceMessage($deviceUuid, $text, $senderName, $validated['messageId'] ?? null, $senderUuid, $recipientUuid));
 
         // Store the message in the database for history/search (as not read yet by admin)
         \Illuminate\Support\Facades\DB::table('contracker_messages')->insert([
             'conversation_id' => $deviceUuid,
-            'sender_id' => $deviceUuid,
-            'receiver_id' => 'admin',   // assuming single-admin scenario
+            'sender_id' => $senderUuid,
+            'receiver_id' => $recipientUuid,
             'message' => $text,
             'created_at' => now(),
             'updated_at' => now(),
