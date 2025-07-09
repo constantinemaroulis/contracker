@@ -26,9 +26,12 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
         setMessage('');
         try {
             // Send the message to the backend (DeviceCommand with command 'message')
+            // fall back to 'admin' if this browser has no device UUID
+            const senderUuid = localStorage.getItem('device_uuid') || 'admin';
             await axios.post(route('session.device.command', { uuid }), {
+                sender_uuid: senderUuid,
                 command: 'message',
-                payload: { message: trimmed, messageId: tempId }
+                payload: { message: trimmed, messageId: tempId, recipient_uuid: uuid }
             });
             console.log('ChatInput: Message sent to backend successfully.');
             // Upon success, we could update status to "sent", but the ACK from device will mark delivered.
@@ -55,9 +58,11 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
         // Notify that the admin is typing (throttle to send infrequently)
         if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
             try {
+                const senderUuid = localStorage.getItem('device_uuid') || 'admin';
                 axios.post(route('session.device.command', { uuid }), {
+                    sender_uuid: senderUuid,
                     command: 'typing',
-                    payload: {}
+                    payload: { recipient_uuid: uuid }
                 });
             } catch (err) {
                 console.error('Failed to send typing indicator', err);

@@ -21,6 +21,8 @@ const DeviceChatInput = ({ uuid, onMessageSent }) => {
             // Send message to backend (Device -> Admin)
             await axios.post(route('devices.message.send'), {
                 uuid,
+                sender_uuid: localStorage.getItem('device_uuid'),
+                recipient_uuid: 'admin',
                 message: trimmed,
                 messageId: tempId
             });
@@ -48,6 +50,8 @@ const DeviceChatInput = ({ uuid, onMessageSent }) => {
         try {
             axios.post(route('devices.message.send'), {
                 uuid,
+                sender_uuid: localStorage.getItem('device_uuid'),
+                recipient_uuid: 'admin',
                 message: '',    // no actual message
                 ack: true,
                 typing: true    // custom flag to indicate typing
