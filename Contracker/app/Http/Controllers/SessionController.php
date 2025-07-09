@@ -40,7 +40,7 @@ class SessionController extends Controller
         ));
 
         return response()->json(['message' => 'Command sent to device.']);
-
+    
     }
 
     public function get(Request $request)
@@ -95,7 +95,7 @@ class SessionController extends Controller
     /**
      * Get the public IP address of the incoming request.
      */
-    public function getDeviceIp(Request $request)
+    public function getDeviceIp(Request $request): JsonResponse
     {
         return response()->json(['ip' => $request->ip()]);
     }
@@ -219,10 +219,9 @@ class SessionController extends Controller
 
     public function listDevices(Request $request)
     {
-        /** @var \Carbon\Carbon $now */
-        $now = now();
+        $now = Carbon::now();
         $devices = ContrackerDevice::all()->map(function ($device) use ($now) {
-            $device->online = $device->last_seen && ($now->diffInMinutes($device->last_seen)*-1) <= 3; // Device is online if last seen within 5 minutes
+            $device->online = $device->last_seen && ($now->diffInMinutes($device->last_seen)*-1) <= 5; // Device is online if last seen within 5 minutes
             $device->last_ping = $now->diffInMinutes($device->last_seen)*-1;
             return $device;
         });
@@ -244,6 +243,7 @@ class SessionController extends Controller
             'sender_uuid' => 'sometimes|string'
         ]);
 
+<<<<<<< HEAD
         $senderUuid = $validated['sender_uuid'] ?? null;
 
         if ($validated['command'] === 'typing') {
@@ -278,8 +278,11 @@ class SessionController extends Controller
 
         // If this is an acknowledgment or other command (typing, ack, etc.)
         broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? [], $senderUuid));
+=======
+        broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? []));
+
+>>>>>>> parent of 40c4ad1 (Better chat)
         return response()->json(['status' => 'Command sent']);
     }
-
 
 }

@@ -9,6 +9,7 @@ import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import './echo';
 import BroadcastConnectionStatus from './Components/BroadcastConnectionStatus';
+import RemoteChatManager from './Components/RemoteChatManager';
 import ChatManager from './Components/ChatManager';
 
 function useOnlineStatus() {
@@ -34,10 +35,6 @@ function useDeviceHeartbeat() {
     const sendPing = () => {
         if (navigator.onLine) {
             axios.post(route('session.device.ping'), { uuid }).catch(console.error);
-        }
-        if (!isOnline) {
-            console.warn('Device is offline, skipping heartbeat.');
-            return;
         }
     };
     sendPing();

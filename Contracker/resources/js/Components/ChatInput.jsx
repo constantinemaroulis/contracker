@@ -6,51 +6,43 @@ import { router } from '@inertiajs/react';
 
 const ChatInput = ({ uuid, auth, onMessageSent }) => {
     const [message, setMessage] = useState('');
-    const [sending, setSending] = useState(false);  // to prevent double submission
-    const [typingTimeout, setTypingTimeout] = useState(null);
 
     const sendMessage = async (e) => {
         e.preventDefault();
-        const trimmed = message.trim();
-        if (!trimmed || !uuid) return;
+        const trimmedMessage = message.trim();
+        if (!trimmedMessage || !uuid) return;
+
         if (!auth.user) {
             alert('Please log in to send a message.');
             router.visit(route('login'));
             return;
         }
-        setSending(true);
-        // Generate a temporary ID for this message for tracking
-        const tempId = Date.now().toString();
-        // Optimistically add the message to the UI with "sending" status
-        onMessageSent(trimmed, tempId);
+
+        onMessageSent(trimmedMessage);
         setMessage('');
+
         try {
+<<<<<<< HEAD
             // Send the message to the backend (DeviceCommand with command 'message')
             const senderUuid = localStorage.getItem('device_uuid');
+=======
+>>>>>>> parent of 40c4ad1 (Better chat)
             await axios.post(route('session.device.command', { uuid }), {
                 sender_uuid: senderUuid,
                 command: 'message',
+<<<<<<< HEAD
                 payload: { message: trimmed, messageId: tempId, recipient_uuid: uuid }
+=======
+                payload: { message: trimmedMessage }
+>>>>>>> parent of 40c4ad1 (Better chat)
             });
             console.log('ChatInput: Message sent to backend successfully.');
-            // Upon success, we could update status to "sent", but the ACK from device will mark delivered.
-            // The sending status will be updated in ChatManager when ACK arrives.
         } catch (error) {
             console.error('ChatInput: Failed to send message to backend.', error);
-            // Mark the message as failed if error occurs
-            window.chatManager && window.chatManager.addMessage(uuid, {
-                id: tempId,
-                sender: 'You',
-                text: trimmed,
-                isReply: false,
-                timestamp: new Date(),
-                status: 'error'   // indicate send failure
-            });
-        } finally {
-            setSending(false);
         }
     };
 
+<<<<<<< HEAD
     const handleInputChange = (e) => {
         setMessage(e.target.value);
         if (!auth.user) return;
@@ -76,18 +68,20 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
         }, 3000));
     };
 
+=======
+>>>>>>> parent of 40c4ad1 (Better chat)
     return (
         <form onSubmit={sendMessage} className="flex gap-2">
             <TextInput
                 type="text"
                 value={message}
-                onChange={handleInputChange}
+                onChange={(e) => setMessage(e.target.value)}
                 placeholder={auth.user ? "Type your message..." : "Log in to chat"}
                 className="flex-grow"
                 autoComplete="off"
-                disabled={!auth.user || sending}
+                disabled={!auth.user}
             />
-            <PrimaryButton type="submit" disabled={!auth.user || sending || !message.trim()}>
+            <PrimaryButton type="submit" disabled={!auth.user || !message.trim()}>
                 Send
             </PrimaryButton>
         </form>

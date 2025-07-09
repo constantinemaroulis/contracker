@@ -5,12 +5,9 @@ import { usePage } from '@inertiajs/react';
 import axios from 'axios';
 import { route } from 'ziggy-js';
 
-const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2,5);
-
 const ChatManager = ({ auth }) => {
     const [activeChats, setActiveChats] = useState([]);
     const [devices, setDevices] = useState([]);
-    const [connectionState, setConnectionState] = useState('connected');
 
     const requestNotificationPermission = () => {
         if ('Notification' in window && Notification.permission !== 'granted') {
@@ -24,23 +21,21 @@ const ChatManager = ({ auth }) => {
         }
     };
 
-    const openChat = useCallback((device) => {
+    const openChat = (device) => {
         setActiveChats(prevChats => {
             const chatExists = prevChats.find(c => c.uuid === device.uuid);
             if (chatExists) {
-                return prevChats.map(c =>
-                    c.uuid === device.uuid
-                        ? { ...c, minimized: false }
-                        : c
-                );
+                return [
+                    { ...chatExists, minimized: false },
+                    ...prevChats.filter(c => c.uuid !== device.uuid)
+                ];
             }
-
             return [
                 { ...device, messages: [], minimized: false },
                 ...prevChats
             ];
         });
-    });
+    };
 
     const closeChat = (uuid) => {
         setActiveChats(prev => prev.filter(c => c.uuid !== uuid));
@@ -51,33 +46,22 @@ const ChatManager = ({ auth }) => {
     };
 
     const addMessage = useCallback((uuid, message) => {
-
-        const device = devices.find(d => d.uuid === uuid);
-
         setActiveChats(prev => {
             const chatExists = prev.find(c => c.uuid === uuid);
-            if (!chatExists && device) {
-                // If the chat doesn't exist, create a new one with the device info
-                prev = [{ ...device, messages: [], minimized: false },
-                    ...prev];
+            if (!chatExists) {
+                const device = devices.find(d => d.uuid === uuid);
+                if(device) openChat(device);
             }
 
-            // Append the new message to the appropriate chat's message list
-            return prev.map(c => {
-                if (c.uuid === uuid) {
-                    // Assign an ID if not already present
-                    if (!message.id) {
-                        message.id = generateId();
-                    }
-                    // Default status for incoming messages is 'delivered' (they reached this client)
-                    if (message.isReply) {
-                        message.status = message.status || 'delivered';
-                    }
-                    return { ...c, messages: [...c.messages, message] };
-                }
-                return c;
-            });
+            sendNotification(message.sender, message.text);
+
+            return prev.map(c =>
+                c.uuid === uuid
+                    ? { ...c, messages: [...c.messages, message], minimized: false }
+                    : c
+            );
         });
+<<<<<<< HEAD
 
             if (message.isReply) {
             // `isReply` true means this message was sent by the other party and received here
@@ -102,6 +86,8 @@ const ChatManager = ({ auth }) => {
                 console.error('Failed to send read receipt ACK for message', message.id, error);
             }
         }
+=======
+>>>>>>> parent of 40c4ad1 (Better chat)
     }, [devices]);
 
     useEffect(() => {
@@ -138,6 +124,7 @@ const ChatManager = ({ auth }) => {
         };
     }, [devices, auth.user, addMessage]);
 
+<<<<<<< HEAD
         // --- LOGIC FOR ADMIN (subscribe to device channels) ---
     useEffect(() => {
         if (!auth.user) return;
@@ -299,39 +286,15 @@ const ChatManager = ({ auth }) => {
         };
     }, [activeChats, auth.user]);
 
+=======
+>>>>>>> parent of 40c4ad1 (Better chat)
     useEffect(() => {
         const uuid = localStorage.getItem('device_uuid');
-        if (auth.user || !uuid) return;
-        // When device client loads, fetch any messages sent while it was offline
-        axios.get(route('devices.messages.history', { uuid }))
-            .then(res => {
-                const history = res.data.messages || [];
-                if (history.length > 0) {
-                    // Open chat window if not already
-                    openChat({ uuid, name: 'Admin' });
-                    history.forEach(record => {
-                        const incoming = record.sender_id !== uuid;  // if sender is not this device, it's from Admin
-                        const msg = {
-                            id: record.id.toString(),
-                            sender: incoming ? 'Admin' : 'You',
-                            text: record.message,
-                            isReply: incoming,
-                            timestamp: new Date(record.created_at),
-                            status: incoming ? 'delivered' : (record.read_at ? 'read' : 'sent')
-                        };
-                        addMessage(uuid, msg);
-                    });
-                }
-            })
-            .catch(err => console.error('Failed to load message history for device', err));
-    }, [auth.user]);
+        if (!uuid) return;
 
-    // --- LOGIC FOR REMOTE DEVICE (subscribe to its own channel) ---
-    useEffect(() => {
-        const uuid = localStorage.getItem('device_uuid');
-        if (auth.user || !uuid) return;
         const channel = window.Echo.private(`device.${uuid}`);
         channel.listen('.DeviceCommand', (event) => {
+<<<<<<< HEAD
             console.log(`Received command for device ${uuid}:`, event);
             if (event.command === 'message' && event.payload && event.payload.message) {
                 // Incoming message from Admin
@@ -413,33 +376,40 @@ const ChatManager = ({ auth }) => {
                     });
                     return { ...chat, messages: updatedMessages };
                 }));
+=======
+            console.log(`Received message event for device ${uuid}:`, event);
+            const data = event.data || event;
+            if (data.command === 'message' && data.payload && data.payload.message) {
+                const device = { uuid, name: 'Admin' }; // Create a temporary device object for the admin
+                openChat(device);
+                addMessage(uuid, {
+                    sender: 'Admin',
+                    text: data.payload.message,
+                    isReply: true,
+                    timestamp: new Date()
+                });
+>>>>>>> parent of 40c4ad1 (Better chat)
             }
         });
-        return () => {
-            window.Echo.leave(`private-device.${uuid}`);
-        };
 
-
-    }, [auth.user, addMessage, openChat]);
+        return () => { window.Echo.leave(`device.${uuid}`); };
+    }, [auth.user, addMessage]);
 
     return (
         <div className="fixed bottom-0 right-0 z-50 flex flex-row-reverse items-end p-4 space-x-4 space-x-reverse">
-            {activeChats.map(chat => (
+            {activeChats.map((chat) => (
                 <PersistentChatWindow
                     key={chat.uuid}
-                    chat={{ ...chat, connectionState }}
+                    chat={chat}
                     auth={auth}
                     onClose={() => closeChat(chat.uuid)}
                     onMinimize={() => minimizeChat(chat.uuid)}
-                    onMessageSent={(text, tempId) => {
-                        // When the user sends a message, add it with status "sending"
+                    onMessageSent={(messageText) => {
                         const message = {
-                            id: tempId || generateId(),
                             sender: 'You',
-                            text,
-                            isReply: false,      // outgoing from this client
-                            timestamp: new Date(),
-                            status: 'sending'    // initial status
+                            text: messageText,
+                            isReply: false,
+                            timestamp: new Date()
                         };
                         addMessage(chat.uuid, message);
                     }}

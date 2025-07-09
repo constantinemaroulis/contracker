@@ -5,45 +5,36 @@ import TextInput from './TextInput';
 
 const DeviceChatInput = ({ uuid, onMessageSent }) => {
     const [message, setMessage] = useState('');
-    const [sending, setSending] = useState(false);
-    const [typingTimeout, setTypingTimeout] = useState(null);
 
     const sendMessage = async (e) => {
         e.preventDefault();
-        const trimmed = message.trim();
-        if (!trimmed || !uuid) return;
-        setSending(true);
-        // Generate temp ID and optimistically add message
-        const tempId = Date.now().toString();
-        onMessageSent(trimmed, tempId);
+        const trimmedMessage = message.trim();
+        if (!trimmedMessage || !uuid) return;
+
+        // 1. Optimistically update the device's own UI
+        onMessageSent(trimmedMessage);
         setMessage('');
+
         try {
-            // Send message to backend (Device -> Admin)
+            // 2. Send the reply to the backend using the correct route
             await axios.post(route('devices.message.send'), {
                 uuid,
+<<<<<<< HEAD
                 sender_uuid: localStorage.getItem('device_uuid'),
                 recipient_uuid: 'admin',
                 message: trimmed,
                 messageId: tempId
+=======
+                message: trimmedMessage,
+>>>>>>> parent of 40c4ad1 (Better chat)
             });
-            console.log('DeviceChatInput: Message sent successfully.');
-            // Device will wait for admin's ACK for delivered/read status
+            console.log('DeviceChatInput: Reply sent successfully.');
         } catch (error) {
-            console.error('DeviceChatInput: Failed to send message.', error);
-            // Mark as failed in UI
-            window.chatManager && window.chatManager.addMessage(uuid, {
-                id: tempId,
-                sender: 'You',
-                text: trimmed,
-                isReply: false,
-                timestamp: new Date(),
-                status: 'error'
-            });
-        } finally {
-            setSending(false);
+            console.error('DeviceChatInput: Failed to send reply.', error);
         }
     };
 
+<<<<<<< HEAD
     const handleInputChange = (e) => {
         setMessage(e.target.value);
         // Device typing indicator
@@ -66,18 +57,19 @@ const DeviceChatInput = ({ uuid, onMessageSent }) => {
         }, 3000));
     };
 
+=======
+>>>>>>> parent of 40c4ad1 (Better chat)
     return (
         <form onSubmit={sendMessage} className="flex gap-2">
             <TextInput
                 type="text"
                 value={message}
-                onChange={handleInputChange}
+                onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type your reply..."
                 className="flex-grow"
                 autoComplete="off"
-                disabled={sending}
             />
-            <PrimaryButton type="submit" disabled={!message.trim() || sending}>
+            <PrimaryButton type="submit" disabled={!message.trim()}>
                 Reply
             </PrimaryButton>
         </form>

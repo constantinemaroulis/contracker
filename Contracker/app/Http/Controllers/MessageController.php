@@ -4,16 +4,23 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Events\DeviceMessage;
+<<<<<<< HEAD
 use App\Events\DeviceCommand;
+=======
+>>>>>>> parent of 40c4ad1 (Better chat)
 use App\Models\ContrackerDevice;
 
 class MessageController extends Controller
 {
+<<<<<<< HEAD
 
+=======
+>>>>>>> parent of 40c4ad1 (Better chat)
     public function send(Request $request)
     {
         $validated = $request->validate([
             'uuid' => 'required|string',
+<<<<<<< HEAD
             'message' => 'nullable|string',
             'messageId' => 'sometimes|string',
             'ack' => 'sometimes|boolean',
@@ -141,5 +148,16 @@ class MessageController extends Controller
         // Broadcast a deletion event
         broadcast(new DeviceCommand($deviceUuid, 'delete', ['messageId' => $id]));
         return response()->json(['status' => 'Message deleted']);
+=======
+            'message' => 'required|string',
+        ]);
+
+        $device = ContrackerDevice::where('uuid', $validated['uuid'])->first();
+        $deviceName = $device && $device->name ? $device->name : 'Unknown Device (' . substr($validated['uuid'], 0, 8) . ')';
+
+        broadcast(new DeviceMessage($validated['uuid'], $validated['message'], $deviceName));
+
+        return response()->json(['status' => 'Message sent']);
+>>>>>>> parent of 40c4ad1 (Better chat)
     }
 }
