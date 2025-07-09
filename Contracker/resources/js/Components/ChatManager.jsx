@@ -3,9 +3,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import PersistentChatWindow from './PersistentChatWindow';
 import { usePage } from '@inertiajs/react';
 import axios from 'axios';
+
 import { route } from 'ziggy-js';
 
 const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2,5);
+
 
 const ChatManager = ({ auth }) => {
     const [activeChats, setActiveChats] = useState([]);
@@ -42,6 +44,7 @@ const ChatManager = ({ auth }) => {
         });
     });
 
+
     const closeChat = (uuid) => {
         setActiveChats(prev => prev.filter(c => c.uuid !== uuid));
     };
@@ -51,6 +54,7 @@ const ChatManager = ({ auth }) => {
     };
 
     const addMessage = useCallback((uuid, message) => {
+
 
         const device = devices.find(d => d.uuid === uuid);
 
@@ -79,6 +83,7 @@ const ChatManager = ({ auth }) => {
             });
         });
 
+
             if (message.isReply) {
             // `isReply` true means this message was sent by the other party and received here
             // Send acknowledgment back for delivery/read
@@ -104,6 +109,7 @@ const ChatManager = ({ auth }) => {
         }
     }, [devices]);
 
+
     useEffect(() => {
         requestNotificationPermission();
         axios.get(route('devices.list'))
@@ -115,8 +121,9 @@ const ChatManager = ({ auth }) => {
         if (devices.length === 0 || !auth.user) return;
         const activeListeners = {};
 
-        devices.forEach(device => {
-            if (!activeListeners[device.uuid]) {
+
+        if (devices.length > 0) {
+            devices.forEach(device => {
                 const channel = window.Echo.private(`device.${device.uuid}`);
                 channel.listen('.DeviceMessage', (e) => {
                     addMessage(device.uuid, {
@@ -126,17 +133,22 @@ const ChatManager = ({ auth }) => {
                         timestamp: new Date()
                     });
                 });
-                activeListeners[device.uuid] = channel;
-            }
-        });
+            });
 
         window.chatManager = { openChat, addMessage };
 
-        return () => {
-            Object.values(activeListeners).forEach(channel => window.Echo.leave(channel.name));
-            delete window.chatManager;
-        };
-    }, [devices, auth.user, addMessage]);
+
+            // **THIS IS THE CORRECTED CLEANUP FUNCTION**
+            return () => {
+                // We loop through the devices again and leave each channel by its name.
+                // This correctly accesses the 'device' variable within this scope.
+                devices.forEach(device => {
+                    window.Echo.leave(`private-device.${device.uuid}`);
+                });
+                delete window.chatManager;
+            };
+        }
+    }, [auth.user, devices, addMessage, openChat]);
 
         // --- LOGIC FOR ADMIN (subscribe to device channels) ---
     useEffect(() => {
@@ -299,6 +311,7 @@ const ChatManager = ({ auth }) => {
         };
     }, [activeChats, auth.user]);
 
+
     useEffect(() => {
         const uuid = localStorage.getItem('device_uuid');
         if (auth.user || !uuid) return;
@@ -326,12 +339,14 @@ const ChatManager = ({ auth }) => {
             .catch(err => console.error('Failed to load message history for device', err));
     }, [auth.user]);
 
+
     // --- LOGIC FOR REMOTE DEVICE (subscribe to its own channel) ---
     useEffect(() => {
         const uuid = localStorage.getItem('device_uuid');
         if (auth.user || !uuid) return;
         const channel = window.Echo.private(`device.${uuid}`);
         channel.listen('.DeviceCommand', (event) => {
+
             console.log(`Received command for device ${uuid}:`, event);
             if (event.command === 'message' && event.payload && event.payload.message) {
                 // Incoming message from Admin
@@ -440,6 +455,7 @@ const ChatManager = ({ auth }) => {
                             isReply: false,      // outgoing from this client
                             timestamp: new Date(),
                             status: 'sending'    // initial status
+
                         };
                         addMessage(chat.uuid, message);
                     }}

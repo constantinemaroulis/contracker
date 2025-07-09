@@ -6,8 +6,10 @@ import { router } from '@inertiajs/react';
 
 const ChatInput = ({ uuid, auth, onMessageSent }) => {
     const [message, setMessage] = useState('');
+
     const [sending, setSending] = useState(false);  // to prevent double submission
     const [typingTimeout, setTypingTimeout] = useState(null);
+
 
     const sendMessage = async (e) => {
         e.preventDefault();
@@ -18,12 +20,14 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
             router.visit(route('login'));
             return;
         }
+
         setSending(true);
         // Generate a temporary ID for this message for tracking
         const tempId = Date.now().toString();
         // Optimistically add the message to the UI with "sending" status
         onMessageSent(trimmed, tempId);
         setMessage('');
+
         try {
             // Send the message to the backend (DeviceCommand with command 'message')
             const senderUuid = localStorage.getItem('device_uuid') || 'admin';

@@ -25,6 +25,7 @@ Route::get('/', function () {
 
 Route::get('/devices', [SessionController::class, 'listDevices'])->name('devices.list');
 
+
     Route::get('/devices/{uuid}/messages', [MessageController::class, 'history'])->name('devices.messages.history');
     Route::get('/devices/{uuid}/messages/search', [MessageController::class, 'search'])->name('devices.messages.search');
 
@@ -73,7 +74,6 @@ Route::post('/devices/send-message', [MessageController::class, 'send'])->name('
 Route::post('/session/device/command/{uuid}', [SessionController::class, 'sendDeviceCommand'])
     ->name('session.device.command');
     Route::get('/session/device/ip', [SessionController::class, 'getDeviceIp'])->name('session.device.ip');
-
 
 
 Route::middleware('web')->group(function () {

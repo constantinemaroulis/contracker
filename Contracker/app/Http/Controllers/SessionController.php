@@ -40,7 +40,6 @@ class SessionController extends Controller
         ));
 
         return response()->json(['message' => 'Command sent to device.']);
-
     }
 
     public function get(Request $request)
@@ -95,7 +94,9 @@ class SessionController extends Controller
     /**
      * Get the public IP address of the incoming request.
      */
+
     public function getDeviceIp(Request $request)
+
     {
         return response()->json(['ip' => $request->ip()]);
     }

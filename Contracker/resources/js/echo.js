@@ -9,7 +9,9 @@ window.Pusher = Pusher;
 
 // ❗️ STEP 1: Copy your REVERB_APP_KEY from your .env file and paste it here.
 // const REVERB_APP_KEY = 'wbrzodxpw9bbt57zxpdo'; nko6vqpdwuiruvrvk16v
+
 const REVERB_APP_KEY = 'wbrzodxpw9bbt57zxpdo';
+
 
 const REVERB_HOST = 'localhost';
 const REVERB_PORT = 8080;
