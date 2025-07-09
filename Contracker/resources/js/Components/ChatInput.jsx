@@ -26,7 +26,6 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
         setMessage('');
         try {
             // Send the message to the backend (DeviceCommand with command 'message')
-            // fall back to 'admin' if this browser has no device UUID
             const senderUuid = localStorage.getItem('device_uuid') || 'admin';
             await axios.post(route('session.device.command', { uuid }), {
                 sender_uuid: senderUuid,
@@ -59,6 +58,7 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
         if (window.Echo && window.Echo.connector && window.Echo.connector.pusher) {
             try {
                 const senderUuid = localStorage.getItem('device_uuid') || 'admin';
+
                 axios.post(route('session.device.command', { uuid }), {
                     sender_uuid: senderUuid,
                     command: 'typing',

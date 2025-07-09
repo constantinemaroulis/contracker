@@ -246,6 +246,7 @@ class SessionController extends Controller
 
         $senderUuid = $validated['sender_uuid'] ?? ($request->user()->id ?? 'admin');
 
+
         if ($validated['command'] === 'typing') {
             // Admin typing indicator
             broadcast(new DeviceCommand($uuid, 'typing', ['recipient_uuid' => $uuid], $senderUuid));

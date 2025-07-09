@@ -38,6 +38,7 @@ class MessageController extends Controller
         }
 
         if (!empty($validated['ack']) && !empty($validated['typing'])) {
+            // Device is notifying that it is typing
             broadcast(new DeviceCommand($deviceUuid, 'typing', ['recipient_uuid' => $recipientUuid], $senderUuid));
             return response()->json(['status' => 'Typing signal sent']);
         }
