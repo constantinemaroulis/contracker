@@ -240,12 +240,15 @@ class SessionController extends Controller
     {
         $validated = $request->validate([
             'command' => 'required|string',
-            'payload' => 'sometimes|array'
+            'payload' => 'sometimes|array',
+            'sender_uuid' => 'sometimes|string'
         ]);
+
+        $senderUuid = $validated['sender_uuid'] ?? ($request->user()->id ?? 'admin');
 
         if ($validated['command'] === 'typing') {
             // Admin typing indicator
-            broadcast(new DeviceCommand($uuid, 'typing', []));
+            broadcast(new DeviceCommand($uuid, 'typing', ['recipient_uuid' => $uuid], $senderUuid));
             return response()->json(['status' => 'Typing signal broadcast']);
         }
 
@@ -256,13 +259,14 @@ class SessionController extends Controller
             // Broadcast chat message to the device's channel
             broadcast(new DeviceCommand($uuid, 'message', [
                 'message' => $messageText,
-                'messageId' => $messageId
-            ]));
-            $senderId = $request->input('uuid');
+                'messageId' => $messageId,
+                'recipient_uuid' => $uuid
+            ], $senderUuid));
+            $senderId = $senderUuid;
             // Store in DB for history (sender is admin, receiver is device)
             \Illuminate\Support\Facades\DB::table('contracker_messages')->insert([
                 'conversation_id' => $uuid,
-                'sender_id' => $senderId, //$request->user()->id ?? 'admin',
+                'sender_id' => $senderId,
                 'receiver_id' => $uuid,
                 'message' => $messageText,
                 'created_at' => now(),
@@ -273,7 +277,7 @@ class SessionController extends Controller
         }
 
         // If this is an acknowledgment or other command (typing, ack, etc.)
-        broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? []));
+        broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? [], $senderUuid));
         return response()->json(['status' => 'Command sent']);
     }
 

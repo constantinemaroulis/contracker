@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,11 +18,14 @@ use Illuminate\Support\Facades\Log;
 // By removing the `$user` type-hint and always returning true, we allow
 // any client (even non-authenticated ones) to subscribe to this channel.
 // This is essential for your remote devices to receive messages.
+Route::post('/broadcasting/auth', function () {
+    return Broadcast::auth(request());
+})->middleware('web');
+
 Broadcast::channel('device.{uuid}', function ($user = null, $uuid) {
     Log::info("Broadcasting authorization attempt for device UUID: {$uuid}");
 
     // In a real production environment, you would add security here,
     // for example, checking if the UUID exists in your database.
     // For now, we allow any device to connect for debugging purposes.
-    return true;
-});
+    return true;});

@@ -84,15 +84,18 @@ const ChatManager = ({ auth }) => {
             // Send acknowledgment back for delivery/read
             try {
                 // Send a delivery confirmation (and immediately send read receipt)
+                const senderUuid = localStorage.getItem('device_uuid') || 'admin';
                 axios.post(route('session.device.command', { uuid }), {
+                    sender_uuid: senderUuid,
                     command: 'ack',
-                    payload: { messageId: message.id, status: 'delivered' }
+                    payload: { messageId: message.id, status: 'delivered', recipient_uuid: uuid }
                 });
                 // Optionally, send a separate read receipt after a short delay
                 setTimeout(() => {
                     axios.post(route('session.device.command', { uuid }), {
+                        sender_uuid: senderUuid,
                         command: 'ack',
-                        payload: { messageId: message.id, status: 'read' }
+                        payload: { messageId: message.id, status: 'read', recipient_uuid: uuid }
                     });
                 }, 1000);
             } catch (error) {
@@ -160,8 +163,8 @@ const ChatManager = ({ auth }) => {
                 // Listen for device acknowledgments (read/delivered receipts or typing indicators)
                 channel.listen('.DeviceCommand', (e) => {
                     if (!e.command) return;
-                    if (e.command === 'typing') {
-                        // Handle typing indicator (set a flag on the chat to show "Device is typing...")
+                    if (e.command === 'typing' && e.senderUuid === device.uuid) {
+                        // Device typing indicator
                         setActiveChats(prev => prev.map(c =>
                             c.uuid === device.uuid ? { ...c, typing: true } : c
                         ));
@@ -247,9 +250,11 @@ const ChatManager = ({ auth }) => {
                             // Attempt to resend
                             if (auth.user) {
                                 // Admin resending a failed message
+                                const senderUuid = localStorage.getItem('device_uuid') || 'admin';
                                 axios.post(route('session.device.command', { uuid: chat.uuid }), {
+                                    sender_uuid: senderUuid,
                                     command: 'message',
-                                    payload: { message: msg.text, messageId: msg.id }
+                                    payload: { message: msg.text, messageId: msg.id, recipient_uuid: chat.uuid }
                                 }).then(() => {
                                     // Update status to "sent" on success
                                     setActiveChats(prev => prev.map(c => {
@@ -267,6 +272,8 @@ const ChatManager = ({ auth }) => {
                                 // Device resending a failed message
                                 axios.post(route('devices.message.send'), {
                                     uuid: chat.uuid,
+                                    sender_uuid: localStorage.getItem('device_uuid'),
+                                    recipient_uuid: 'admin',
                                     message: msg.text,
                                     messageId: msg.id
                                 }).then(() => {
@@ -343,6 +350,8 @@ const ChatManager = ({ auth }) => {
                 try {
                     axios.post(route('devices.message.send'), {
                         uuid,
+                        sender_uuid: localStorage.getItem('device_uuid'),
+                        recipient_uuid: 'admin',
                         message: '',  // no text for ack, we use command instead
                         ack: true,
                         messageId: msg.id,
@@ -355,6 +364,8 @@ const ChatManager = ({ auth }) => {
                     try {
                         axios.post(route('devices.message.send'), {
                             uuid,
+                            sender_uuid: localStorage.getItem('device_uuid'),
+                            recipient_uuid: 'admin',
                             message: '',
                             ack: true,
                             messageId: msg.id,
@@ -366,6 +377,18 @@ const ChatManager = ({ auth }) => {
                 }, 1000);
             }
 
+            if (event.command === 'typing' && event.senderUuid && event.senderUuid !== uuid) {
+                // Admin typing indicator
+                openChat({ uuid, name: 'Admin' });
+                setActiveChats(prev => prev.map(c =>
+                    c.uuid === uuid ? { ...c, typing: true } : c
+                ));
+                setTimeout(() => {
+                    setActiveChats(prev => prev.map(c =>
+                        c.uuid === uuid ? { ...c, typing: false } : c
+                    ));
+                }, 3000);
+            }
             if (event.command === 'edit' && event.payload) {
                 const { messageId, newText } = event.payload;
                 // Update message text in device's chat
