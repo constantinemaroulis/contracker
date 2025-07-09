@@ -264,6 +264,8 @@ class SessionController extends Controller
                 'messageId' => $messageId,
                 'recipient_uuid' => $uuid
             ], $senderUuid));
+            // Also broadcast to other admins so everyone sees the sent message
+            broadcast(new DeviceMessage($uuid, $messageText, 'Admin', $messageId, $senderUuid, $uuid));
             $senderId = $senderUuid;
             // Store in DB for history (sender is admin, receiver is device)
             \Illuminate\Support\Facades\DB::table('contracker_messages')->insert([

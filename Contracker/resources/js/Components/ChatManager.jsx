@@ -70,9 +70,17 @@ const ChatManager = ({ auth }) => {
 
             return prev.map(c => {
                 if (c.uuid === uuid) {
-                    // Avoid duplicates based on ID
-                    if (message.id && c.messages.some(m => m.id === message.id)) {
-                        return c;
+                    if (message.id) {
+                        const idx = c.messages.findIndex(m => m.id === message.id);
+                        if (idx !== -1) {
+                            // Update status if new info is provided
+                            if (message.status && c.messages[idx].status !== message.status) {
+                                const updated = [...c.messages];
+                                updated[idx] = { ...c.messages[idx], status: message.status };
+                                return { ...c, messages: updated };
+                            }
+                            return c;
+                        }
                     }
                     if (!message.id) {
                         message.id = generateId();
@@ -133,16 +141,17 @@ const ChatManager = ({ auth }) => {
             // Subscribe only to online devices to reduce unused authorizations
             devices.filter(d => d.online).forEach(device => {
                 const channel = window.Echo.private(`device.${device.uuid}`);
-                // Listen for messages from devices
+                // Listen for messages from devices or other admins
                 channel.listen('.DeviceMessage', (e) => {
-                    console.log('Received message from device', device.uuid, e);
+                    console.log('Received DeviceMessage', device.uuid, e);
+                    const incoming = e.senderUuid === device.uuid;
                     const msg = {
                         id: e.messageId || generateId(),
-                        sender: e.senderName || 'Device',
+                        sender: e.senderName || (incoming ? 'Device' : 'Admin'),
                         text: e.message,
-                        isReply: true,       // incoming to admin
+                        isReply: incoming,
                         timestamp: new Date(),
-                        status: 'delivered'  // delivered to admin client
+                        status: incoming ? 'delivered' : 'sent'
                     };
                     // Ensure the chat is visible when a new message arrives
                     openChat(device);
@@ -184,19 +193,6 @@ const ChatManager = ({ auth }) => {
                             });
                             return { ...chat, messages: updatedMessages };
                         }));
-                    }
-                    if (e.command === 'message' && e.payload && e.payload.message) {
-                        console.log('Received admin message for device', device.uuid, e);
-                        const msg = {
-                            id: e.payload.messageId || generateId(),
-                            sender: 'Admin',
-                            text: e.payload.message,
-                            isReply: true,
-                            timestamp: new Date(),
-                            status: 'delivered'
-                        };
-                        openChat(device);
-                        addMessage(device.uuid, msg);
                     }
                     if (e.command === 'edit' && e.payload) {
                         const { messageId, newText } = e.payload;
