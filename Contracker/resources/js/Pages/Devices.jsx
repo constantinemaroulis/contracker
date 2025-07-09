@@ -107,13 +107,12 @@ export default function Devices({ auth }) {
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-2 border dark:border-gray-600">
-                                                        {device.online ? (
-                                                            <button onClick={() => handleChatClick(device)} className="text-blue-600 dark:text-blue-400 hover:underline">
-                                                                Chat
-                                                            </button>
-                                                        ) : (
-                                                            <span className="text-red-500">✖ Offline</span>
-                                                        )}
+                                                        <button
+                                                            onClick={() => handleChatClick(device)}
+                                                            className={`${device.online ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'} hover:underline`}
+                                                        >
+                                                            Chat
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))

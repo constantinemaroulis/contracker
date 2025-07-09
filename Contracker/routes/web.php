@@ -25,6 +25,12 @@ Route::get('/', function () {
 
 Route::get('/devices', [SessionController::class, 'listDevices'])->name('devices.list');
 
+    Route::get('/devices/{uuid}/messages', [MessageController::class, 'history'])->name('devices.messages.history');
+    Route::get('/devices/{uuid}/messages/search', [MessageController::class, 'search'])->name('devices.messages.search');
+
+    Route::put('/devices/messages/{id}', [MessageController::class, 'update'])->name('devices.message.update');
+    Route::delete('/devices/messages/{id}', [MessageController::class, 'destroy'])->name('devices.message.delete');
+
 // Authenticated User Routes
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
@@ -47,6 +53,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Geofence', ['jobId' => $jobId]);
     })->name('geofence');
 
+
+
+
     // Chat Command Route
     // Route::post('/session/device/{uuid}/command', [SessionController::class, 'sendDeviceCommand'])->name('session.device.command');
 });
@@ -64,6 +73,8 @@ Route::post('/devices/send-message', [MessageController::class, 'send'])->name('
 Route::post('/session/device/command/{uuid}', [SessionController::class, 'sendDeviceCommand'])
     ->name('session.device.command');
     Route::get('/session/device/ip', [SessionController::class, 'getDeviceIp'])->name('session.device.ip');
+
+
 
 Route::middleware('web')->group(function () {
     // Device Registration & Data
@@ -83,7 +94,7 @@ Route::middleware('web')->group(function () {
 
     // Other Session/Job routes
 
-    
+
 
     Route::get('/session/jobs', [SessionController::class, 'getJobs'])->name('session.getJobs');
     Route::get('/session/job-location/{jobId}', [SessionController::class, 'getJobLocation'])->name('session.getJobLocation');

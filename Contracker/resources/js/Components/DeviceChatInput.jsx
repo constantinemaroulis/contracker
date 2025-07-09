@@ -5,26 +5,61 @@ import TextInput from './TextInput';
 
 const DeviceChatInput = ({ uuid, onMessageSent }) => {
     const [message, setMessage] = useState('');
+    const [sending, setSending] = useState(false);
+    const [typingTimeout, setTypingTimeout] = useState(null);
 
     const sendMessage = async (e) => {
         e.preventDefault();
-        const trimmedMessage = message.trim();
-        if (!trimmedMessage || !uuid) return;
-
-        // 1. Optimistically update the device's own UI
-        onMessageSent(trimmedMessage);
+        const trimmed = message.trim();
+        if (!trimmed || !uuid) return;
+        setSending(true);
+        // Generate temp ID and optimistically add message
+        const tempId = Date.now().toString();
+        onMessageSent(trimmed, tempId);
         setMessage('');
-
         try {
-            // 2. Send the reply to the backend using the correct route
+            // Send message to backend (Device -> Admin)
             await axios.post(route('devices.message.send'), {
                 uuid,
-                message: trimmedMessage,
+                message: trimmed,
+                messageId: tempId
             });
-            console.log('DeviceChatInput: Reply sent successfully.');
+            console.log('DeviceChatInput: Message sent successfully.');
+            // Device will wait for admin's ACK for delivered/read status
         } catch (error) {
-            console.error('DeviceChatInput: Failed to send reply.', error);
+            console.error('DeviceChatInput: Failed to send message.', error);
+            // Mark as failed in UI
+            window.chatManager && window.chatManager.addMessage(uuid, {
+                id: tempId,
+                sender: 'You',
+                text: trimmed,
+                isReply: false,
+                timestamp: new Date(),
+                status: 'error'
+            });
+        } finally {
+            setSending(false);
         }
+    };
+
+    const handleInputChange = (e) => {
+        setMessage(e.target.value);
+        // Device typing indicator
+        try {
+            axios.post(route('devices.message.send'), {
+                uuid,
+                message: '',    // no actual message
+                ack: true,
+                typing: true    // custom flag to indicate typing
+            });
+        } catch (err) {
+            console.error('Failed to send device typing indicator', err);
+        }
+        if (typingTimeout) clearTimeout(typingTimeout);
+        setTypingTimeout(setTimeout(() => {
+            setTypingTimeout(null);
+            // Could send stop-typing indicator if needed
+        }, 3000));
     };
 
     return (
@@ -32,12 +67,13 @@ const DeviceChatInput = ({ uuid, onMessageSent }) => {
             <TextInput
                 type="text"
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={handleInputChange}
                 placeholder="Type your reply..."
                 className="flex-grow"
                 autoComplete="off"
+                disabled={sending}
             />
-            <PrimaryButton type="submit" disabled={!message.trim()}>
+            <PrimaryButton type="submit" disabled={!message.trim() || sending}>
                 Reply
             </PrimaryButton>
         </form>
