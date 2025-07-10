@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\RemoteControlController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -53,6 +54,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/geofence/{jobId}', function ($jobId) {
         return Inertia::render('Geofence', ['jobId' => $jobId]);
     })->name('geofence');
+
+    // Message Search Page
+    Route::get('/messages/search', [MessageController::class, 'searchPage'])->name('messages.search');
+
+    // Remote Control Page (screen sharing initiated by user)
+    Route::get('/remote-control', [\App\Http\Controllers\RemoteControlController::class, 'index'])->name('remote.control');
 
 
 

@@ -9,6 +9,7 @@ use App\Models\ContrackerDevice;
 use App\Models\ContrackerJob;
 use App\Models\ContrackerJobLocation;
 use App\Models\ContrackerJobGeofence;
+use App\Models\ChatMessage;
 
 use Inertia\Inertia;
 use Inertia\Response;
@@ -268,14 +269,13 @@ class SessionController extends Controller
             broadcast(new DeviceMessage($uuid, $messageText, 'Admin', $messageId, $senderUuid, $uuid))->toOthers();
             $senderId = $senderUuid;
             // Store in DB for history (sender is admin, receiver is device)
-            \Illuminate\Support\Facades\DB::table('contracker_messages')->insert([
+            ChatMessage::create([
                 'conversation_id' => $uuid,
                 'sender_id' => $senderId,
                 'receiver_id' => $uuid,
                 'message' => $messageText,
-                'created_at' => now(),
-                'updated_at' => now(),
-                'read_at' => null  // device has not read yet
+                'status' => 'sent',
+                'read_at' => null,
             ]);
             return response()->json(['status' => 'Message sent']);
         }
