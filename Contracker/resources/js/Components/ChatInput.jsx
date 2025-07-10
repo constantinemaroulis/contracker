@@ -3,6 +3,7 @@ import axios from 'axios';
 import PrimaryButton from './PrimaryButton';
 import TextInput from './TextInput';
 import { router } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 
 const ChatInput = ({ uuid, auth, onMessageSent }) => {
     const [message, setMessage] = useState('');
@@ -22,9 +23,9 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
         }
 
         setSending(true);
-        // Generate a temporary ID for this message for tracking
+        // Generate a temporary ID for this message
         const tempId = Date.now().toString();
-        // Optimistically add the message to the UI with "sending" status
+        // Optimistically add the message to the UI
         onMessageSent(trimmed, tempId);
         setMessage('');
 
@@ -35,10 +36,10 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
                 sender_uuid: senderUuid,
                 command: 'message',
                 payload: { message: trimmed, messageId: tempId, recipient_uuid: uuid }
+            }, {
+                headers: { 'X-Socket-Id': window.Echo.socketId() }
             });
             console.log('ChatInput: Message sent to backend successfully.');
-            // Upon success, we could update status to "sent", but the ACK from device will mark delivered.
-            // The sending status will be updated in ChatManager when ACK arrives.
         } catch (error) {
             console.error('ChatInput: Failed to send message to backend.', error);
             // Mark the message as failed if error occurs
@@ -67,6 +68,8 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
                     sender_uuid: senderUuid,
                     command: 'typing',
                     payload: { recipient_uuid: uuid }
+                }, {
+                    headers: { 'X-Socket-Id': window.Echo.socketId() }
                 });
             } catch (err) {
                 console.error('Failed to send typing indicator', err);

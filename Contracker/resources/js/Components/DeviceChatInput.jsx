@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import PrimaryButton from './PrimaryButton';
 import TextInput from './TextInput';
+import { route } from 'ziggy-js';
 
 const DeviceChatInput = ({ uuid, onMessageSent }) => {
     const [message, setMessage] = useState('');
@@ -25,9 +26,10 @@ const DeviceChatInput = ({ uuid, onMessageSent }) => {
                 recipient_uuid: 'admin',
                 message: trimmed,
                 messageId: tempId
+            }, {
+                headers: { 'X-Socket-Id': window.Echo.socketId() }
             });
             console.log('DeviceChatInput: Message sent successfully.');
-            // Device will wait for admin's ACK for delivered/read status
         } catch (error) {
             console.error('DeviceChatInput: Failed to send message.', error);
             // Mark as failed in UI
@@ -55,6 +57,8 @@ const DeviceChatInput = ({ uuid, onMessageSent }) => {
                 message: '',    // no actual message
                 ack: true,
                 typing: true    // custom flag to indicate typing
+            }, {
+                headers: { 'X-Socket-Id': window.Echo.socketId() }
             });
         } catch (err) {
             console.error('Failed to send device typing indicator', err);

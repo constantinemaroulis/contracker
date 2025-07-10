@@ -18,6 +18,7 @@ class MessageController extends Controller
             'messageId' => 'sometimes|string',
             'ack' => 'sometimes|boolean',
             'status' => 'sometimes|string',
+            'typing' => 'sometimes|boolean',
             'sender_uuid' => 'sometimes|string',
             'recipient_uuid' => 'sometimes|string'
         ]);
@@ -27,20 +28,20 @@ class MessageController extends Controller
         $senderUuid = $validated['sender_uuid'] ?? $deviceUuid;
         $recipientUuid = $validated['recipient_uuid'] ?? 'admin';
 
+        if (!empty($validated['typing'])) {
+            // Device is notifying that it is typing
+            broadcast(new DeviceCommand($deviceUuid, 'typing', ['recipient_uuid' => $recipientUuid], $senderUuid))->toOthers();
+            return response()->json(['status' => 'Typing signal sent']);
+        }
+
         if (!empty($validated['ack']) && isset($validated['messageId'], $validated['status'])) {
             // This is an acknowledgment from a device that a message was delivered/read.
             broadcast(new DeviceCommand($deviceUuid, 'ack', [
                 'messageId' => $validated['messageId'],
                 'status' => $validated['status'],
                 'recipient_uuid' => $recipientUuid
-            ], $senderUuid));
+            ], $senderUuid))->toOthers();
             return response()->json(['status' => 'ACK broadcast']);
-        }
-
-        if (!empty($validated['ack']) && !empty($validated['typing'])) {
-            // Device is notifying that it is typing
-            broadcast(new DeviceCommand($deviceUuid, 'typing', ['recipient_uuid' => $recipientUuid], $senderUuid));
-            return response()->json(['status' => 'Typing signal sent']);
         }
 
         // Determine sender and receiver for storage
@@ -52,7 +53,7 @@ class MessageController extends Controller
         }
 
         // Broadcast DeviceMessage event to admin listeners
-        broadcast(new DeviceMessage($deviceUuid, $text, $senderName, $validated['messageId'] ?? null, $senderUuid, $recipientUuid));
+        broadcast(new DeviceMessage($deviceUuid, $text, $senderName, $validated['messageId'] ?? null, $senderUuid, $recipientUuid))->toOthers();
 
         // Store the message in the database for history/search (as not read yet by admin)
         \Illuminate\Support\Facades\DB::table('contracker_messages')->insert([
