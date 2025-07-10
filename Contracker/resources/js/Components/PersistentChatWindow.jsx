@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
 import DeviceChatInput from './DeviceChatInput';
+import axios from 'axios';
+import { route } from 'ziggy-js';
 
 // The usePage import has been removed.
 
 const PersistentChatWindow = ({ chat, auth, onClose, onMinimize, onMessageSent }) => {
     // The usePage() call has been removed. 'auth' is now a prop.
     const [editingId, setEditingId] = useState(null);
+    const messagesRef = useRef(null);
+
+    useEffect(() => {
+        if (messagesRef.current) {
+            messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+        }
+    }, [chat.messages.length, chat.minimized]);
 
     const handleEditRequest = (messageId, originalText) => {
         if (!messageId) {
@@ -77,7 +86,10 @@ const PersistentChatWindow = ({ chat, auth, onClose, onMinimize, onMessageSent }
         <div className={`w-80 ${chat.minimized ? 'max-h-12 overflow-hidden' : 'h-[28rem]'} bg-white dark:bg-gray-800 rounded-t-lg shadow-2xl flex flex-col`}>
             {/* Header */}
             <div onClick={onMinimize} className="flex justify-between items-center p-2 bg-gray-700 dark:bg-gray-900 text-white rounded-t-lg cursor-pointer">
-                <h3 className="font-semibold text-sm truncate">{chat.name || chat.uuid}</h3>
+                <h3 className="font-semibold text-sm truncate">
+                    {chat.name || chat.uuid}
+                    {auth?.user && ` - ${auth.user.name}`}
+                </h3>
                 <div>
                     <button onClick={(e) => { e.stopPropagation(); onMinimize(); }} className="px-2 text-lg hover:bg-gray-600 rounded">-</button>
                     <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="px-2 text-lg hover:bg-gray-600 rounded">×</button>
@@ -94,7 +106,7 @@ const PersistentChatWindow = ({ chat, auth, onClose, onMinimize, onMessageSent }
                 )}
             {!chat.minimized && (
                 <>
-                    <div className="flex-grow p-4 overflow-y-auto border-x border-gray-300 dark:border-gray-600">
+                    <div ref={messagesRef} className="flex-grow p-4 overflow-y-auto border-x border-gray-300 dark:border-gray-600">
                         <ChatMessages
                             messages={chat.messages}
                             onEditMessage={handleEditRequest}
