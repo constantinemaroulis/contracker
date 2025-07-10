@@ -14,6 +14,8 @@ const ChatManager = ({ auth }) => {
     const [devices, setDevices] = useState([]);
     const [connectionState, setConnectionState] = useState('connected');
 
+    const loggedIn = !!(auth && auth.user);
+
     const requestNotificationPermission = () => {
         if ('Notification' in window && Notification.permission !== 'granted') {
             Notification.requestPermission();
@@ -80,17 +82,18 @@ const ChatManager = ({ auth }) => {
 
 
     useEffect(() => {
+        if (!loggedIn) return;
         requestNotificationPermission();
         axios.get(route('devices.list'))
             .then(res => setDevices(res.data.devices || []))
             .catch(err => console.error('Failed to load initial devices', err));
-    }, []);
+    }, [loggedIn]);
 
 
 
         // --- LOGIC FOR ADMIN (subscribe to device channels) ---
     useEffect(() => {
-        if (!auth.user) return;
+        if (!loggedIn) return;
         // Load device list (to know names/online status)
         axios.get(route('devices.list'))
             .then(res => setDevices(res.data.devices || []))
@@ -188,7 +191,7 @@ const ChatManager = ({ auth }) => {
                 delete window.chatManager;
             };
         }
-    }, [auth.user, devices, addMessage]);
+    }, [loggedIn, devices, addMessage]);
 
     // Monitor Pusher/Echo connection state
     useEffect(() => {
@@ -207,7 +210,7 @@ const ChatManager = ({ auth }) => {
 
     useEffect(() => {
         const uuid = localStorage.getItem('device_uuid');
-        if (auth.user || !uuid) return;
+        if (loggedIn || !uuid) return;
         // When device client loads, fetch any messages sent while it was offline
         axios.get(route('devices.messages.history', { uuid }))
             .then(res => {
@@ -230,13 +233,13 @@ const ChatManager = ({ auth }) => {
                 }
             })
             .catch(err => console.error('Failed to load message history for device', err));
-    }, [auth.user]);
+    }, [loggedIn]);
 
 
     // --- LOGIC FOR REMOTE DEVICE (subscribe to its own channel) ---
     useEffect(() => {
         const uuid = localStorage.getItem('device_uuid');
-        if (auth.user || !uuid) return;
+        if (loggedIn || !uuid) return;
         const channel = window.Echo.private(`device.${uuid}`);
         channel.listen('.DeviceCommand', (event) => {
 
@@ -330,7 +333,9 @@ const ChatManager = ({ auth }) => {
         };
 
 
-    }, [auth.user, addMessage, openChat]);
+    }, [loggedIn, addMessage, openChat]);
+
+    if (!loggedIn) return null;
 
     return (
         <div className="fixed bottom-0 right-0 z-50 flex flex-row-reverse items-end p-4 space-x-4 space-x-reverse">
