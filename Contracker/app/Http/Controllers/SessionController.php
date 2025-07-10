@@ -40,7 +40,6 @@ class SessionController extends Controller
         ));
 
         return response()->json(['message' => 'Command sent to device.']);
-    
     }
 
     public function get(Request $request)
@@ -95,7 +94,9 @@ class SessionController extends Controller
     /**
      * Get the public IP address of the incoming request.
      */
-    public function getDeviceIp(Request $request): JsonResponse
+
+    public function getDeviceIp(Request $request)
+
     {
         return response()->json(['ip' => $request->ip()]);
     }
@@ -219,9 +220,10 @@ class SessionController extends Controller
 
     public function listDevices(Request $request)
     {
-        $now = Carbon::now();
+        /** @var \Carbon\Carbon $now */
+        $now = now();
         $devices = ContrackerDevice::all()->map(function ($device) use ($now) {
-            $device->online = $device->last_seen && ($now->diffInMinutes($device->last_seen)*-1) <= 5; // Device is online if last seen within 5 minutes
+            $device->online = $device->last_seen && ($now->diffInMinutes($device->last_seen)*-1) <= 3; // Device is online if last seen within 5 minutes
             $device->last_ping = $now->diffInMinutes($device->last_seen)*-1;
             return $device;
         });
@@ -239,12 +241,47 @@ class SessionController extends Controller
     {
         $validated = $request->validate([
             'command' => 'required|string',
-            'payload' => 'sometimes|array'
+            'payload' => 'sometimes|array',
+            'sender_uuid' => 'sometimes|string'
         ]);
 
-        broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? []));
+        $senderUuid = $validated['sender_uuid'] ?? ($request->user()->id ?? 'admin');
 
+
+        if ($validated['command'] === 'typing') {
+            // Admin typing indicator
+            broadcast(new DeviceCommand($uuid, 'typing', ['recipient_uuid' => $uuid], $senderUuid));
+            return response()->json(['status' => 'Typing signal broadcast']);
+        }
+
+        // If admin is sending a chat message  if ($validated['command'] === 'message' && isset($validated['payload']['message'])) {
+        if ($validated['command'] === 'message') {
+            $messageText = $validated['payload']['message'];
+            $messageId = $validated['payload']['messageId'] ?? null;
+            // Broadcast chat message to the device's channel
+            broadcast(new DeviceCommand($uuid, 'message', [
+                'message' => $messageText,
+                'messageId' => $messageId,
+                'recipient_uuid' => $uuid
+            ], $senderUuid));
+            $senderId = $senderUuid;
+            // Store in DB for history (sender is admin, receiver is device)
+            \Illuminate\Support\Facades\DB::table('contracker_messages')->insert([
+                'conversation_id' => $uuid,
+                'sender_id' => $senderId,
+                'receiver_id' => $uuid,
+                'message' => $messageText,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'read_at' => null  // device has not read yet
+            ]);
+            return response()->json(['status' => 'Message sent']);
+        }
+
+        // If this is an acknowledgment or other command (typing, ack, etc.)
+        broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? [], $senderUuid));
         return response()->json(['status' => 'Command sent']);
     }
+
 
 }

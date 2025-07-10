@@ -26,12 +26,18 @@ class DeviceMessage implements ShouldBroadcast, ShouldQueue
     public $uuid;
     public $message;
     public $senderName;
+    public $messageId; // Add an ID property to broadcast
+    public $senderUuid;
+    public $recipientUuid;
 
-    public function __construct($uuid, $message, $senderName)
+    public function __construct($uuid, $message, $senderName, $messageId = null, $senderUuid = null, $recipientUuid = null)
     {
         $this->uuid = $uuid;
         $this->message = $message;
         $this->senderName = $senderName;
+        $this->messageId = $messageId;
+        $this->senderUuid = $senderUuid;
+        $this->recipientUuid = $recipientUuid;
     }
 
     public function broadcastOn(): Channel
