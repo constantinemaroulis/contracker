@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
 import DeviceChatInput from './DeviceChatInput';
+import axios from 'axios';
+import { route } from 'ziggy-js';
 
 // The usePage import has been removed.
 
 const PersistentChatWindow = ({ chat, auth, onClose, onMinimize, onMessageSent }) => {
     // The usePage() call has been removed. 'auth' is now a prop.
     const [editingId, setEditingId] = useState(null);
+    const messagesRef = useRef(null);
+
+    useEffect(() => {
+        if (messagesRef.current) {
+            messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+        }
+    }, [chat.messages.length, chat.minimized]);
 
     const handleEditRequest = (messageId, originalText) => {
         if (!messageId) {
@@ -97,7 +106,7 @@ const PersistentChatWindow = ({ chat, auth, onClose, onMinimize, onMessageSent }
                 )}
             {!chat.minimized && (
                 <>
-                    <div className="flex-grow p-4 overflow-y-auto border-x border-gray-300 dark:border-gray-600">
+                    <div ref={messagesRef} className="flex-grow p-4 overflow-y-auto border-x border-gray-300 dark:border-gray-600">
                         <ChatMessages
                             messages={chat.messages}
                             onEditMessage={handleEditRequest}

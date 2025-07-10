@@ -99,8 +99,8 @@ const ChatManager = ({ auth }) => {
             .then(res => setDevices(res.data.devices || []))
             .catch(err => console.error('Failed to load device list', err));
         if (devices.length > 0) {
-            // Subscribe only to online devices to reduce unused authorizations
-            devices.filter(d => d.online).forEach(device => {
+            // Subscribe to all devices so admin clients see each other's messages
+            devices.forEach(device => {
                 const channel = window.Echo.private(`device.${device.uuid}`);
                 // Listen for messages from devices or other admins
                 channel.listen('.DeviceMessage', (e) => {
@@ -185,7 +185,7 @@ const ChatManager = ({ auth }) => {
             window.chatManager = { openChat, addMessage };
             // Cleanup on unmount: leave channels and remove global ref
             return () => {
-                devices.filter(d => d.online).forEach(device => {
+                devices.forEach(device => {
                     window.Echo.leave(`private-device.${device.uuid}`);
                 });
                 delete window.chatManager;
