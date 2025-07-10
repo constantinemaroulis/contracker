@@ -30,7 +30,6 @@ const DeviceChatInput = ({ uuid, onMessageSent }) => {
                 headers: { 'X-Socket-Id': window.Echo.socketId() }
             });
             console.log('DeviceChatInput: Message sent successfully.');
-            // Device will wait for admin's ACK for delivered/read status
         } catch (error) {
             console.error('DeviceChatInput: Failed to send message.', error);
             // Mark as failed in UI

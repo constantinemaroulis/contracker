@@ -23,9 +23,9 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
         }
 
         setSending(true);
-        // Generate a temporary ID for this message for tracking
+        // Generate a temporary ID for this message
         const tempId = Date.now().toString();
-        // Optimistically add the message to the UI with "sending" status
+        // Optimistically add the message to the UI
         onMessageSent(trimmed, tempId);
         setMessage('');
 
@@ -40,8 +40,6 @@ const ChatInput = ({ uuid, auth, onMessageSent }) => {
                 headers: { 'X-Socket-Id': window.Echo.socketId() }
             });
             console.log('ChatInput: Message sent to backend successfully.');
-            // Upon success, we could update status to "sent", but the ACK from device will mark delivered.
-            // The sending status will be updated in ChatManager when ACK arrives.
         } catch (error) {
             console.error('ChatInput: Failed to send message to backend.', error);
             // Mark the message as failed if error occurs

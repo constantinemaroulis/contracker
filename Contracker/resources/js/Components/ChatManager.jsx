@@ -115,7 +115,7 @@ const ChatManager = ({ auth }) => {
                     openChat(device);
                     addMessage(device.uuid, msg);
                 });
-                // Listen for device acknowledgments (read/delivered receipts or typing indicators)
+                // Listen for typing and edit/delete events
                 channel.listen('.DeviceCommand', (e) => {
                     if (!e.command) return;
                     if (e.command === 'typing' && e.senderUuid === device.uuid) {
@@ -130,27 +130,6 @@ const ChatManager = ({ auth }) => {
                                 c.uuid === device.uuid ? { ...c, typing: false } : c
                             ));
                         }, 3000);
-                    }
-                    if (e.command === 'ack' && e.payload) {
-                        // Device sent an acknowledgment (delivered/read) for a message
-                        const { messageId, status } = e.payload;
-                        // Update the status of the message with given ID in the chat state
-                        setActiveChats(prevChats => prevChats.map(chat => {
-                            if (chat.uuid !== device.uuid) return chat;
-                            const updatedMessages = chat.messages.map(msg => {
-                                if (msg.id === messageId) {
-                                    // Upgrade status: 'delivered' or 'read'
-                                    if (status === 'delivered' && msg.status === 'sent') {
-                                        msg.status = 'delivered';
-                                    }
-                                    if (status === 'read') {
-                                        msg.status = 'read';
-                                    }
-                                }
-                                return msg;
-                            });
-                            return { ...chat, messages: updatedMessages };
-                        }));
                     }
                     if (e.command === 'edit' && e.payload) {
                         const { messageId, newText } = e.payload;
@@ -250,40 +229,11 @@ const ChatManager = ({ auth }) => {
                     id: event.payload.messageId || generateId(),
                     sender: adminName,
                     text: event.payload.message,
-                    isReply: true,         // incoming to device
+                    isReply: true,
                     timestamp: new Date(),
-                    status: 'delivered'    // delivered to device client
+                    status: 'sent'
                 };
                 addMessage(uuid, msg);
-                // Send acknowledgment back to admin for delivery and read
-                try {
-                    axios.post(route('devices.message.send'), {
-                        uuid,
-                        sender_uuid: localStorage.getItem('device_uuid'),
-                        recipient_uuid: 'admin',
-                        message: '',  // no text for ack, we use command instead
-                        ack: true,
-                        messageId: msg.id,
-                        status: 'delivered'
-                    });
-                } catch (err) {
-                    console.error('Failed to send delivered ACK from device.', err);
-                }
-                setTimeout(() => {
-                    try {
-                        axios.post(route('devices.message.send'), {
-                            uuid,
-                            sender_uuid: localStorage.getItem('device_uuid'),
-                            recipient_uuid: 'admin',
-                            message: '',
-                            ack: true,
-                            messageId: msg.id,
-                            status: 'read'
-                        });
-                    } catch (err) {
-                        console.error('Failed to send read ACK from device.', err);
-                    }
-                }, 1000);
             }
 
             if (event.command === 'typing' && event.senderUuid && event.senderUuid !== uuid) {
@@ -342,14 +292,14 @@ const ChatManager = ({ auth }) => {
                     onClose={() => closeChat(chat.uuid)}
                     onMinimize={() => minimizeChat(chat.uuid)}
                     onMessageSent={(text, tempId) => {
-                        // When the user sends a message, add it with status "sending"
+                        // Optimistically add the new message
                         const message = {
                             id: tempId || generateId(),
                             sender: 'You',
                             text,
-                            isReply: false,      // outgoing from this client
+                            isReply: false,
                             timestamp: new Date(),
-                            status: 'sending'    // initial status
+                            status: 'sent'
 
                         };
                         addMessage(chat.uuid, message);
