@@ -54,70 +54,28 @@ const ChatManager = ({ auth }) => {
     };
 
     const addMessage = useCallback((uuid, message) => {
-        // Look up the device info (may be undefined if not yet loaded)
         let device = devices.find(d => d.uuid === uuid);
 
         setActiveChats(prev => {
             let chat = prev.find(c => c.uuid === uuid);
             if (!chat) {
                 if (!device) {
-                    // Fallback device object if not found in list
                     device = { uuid, name: message.isReply ? 'Admin' : 'Device' };
                 }
                 chat = { ...device, messages: [], minimized: false };
                 prev = [chat, ...prev];
             }
 
-            return prev.map(c => {
-                if (c.uuid === uuid) {
-                    if (message.id) {
-                        const idx = c.messages.findIndex(m => m.id === message.id);
-                        if (idx !== -1) {
-                            // Update status if new info is provided
-                            if (message.status && c.messages[idx].status !== message.status) {
-                                const updated = [...c.messages];
-                                updated[idx] = { ...c.messages[idx], status: message.status };
-                                return { ...c, messages: updated };
-                            }
-                            return c;
-                        }
-                    }
-                    if (!message.id) {
-                        message.id = generateId();
-                    }
-                    if (message.isReply) {
-                        message.status = message.status || 'delivered';
-                    }
-                    return { ...c, messages: [...c.messages, message] };
+            const exists = chat.messages.some(m => m.id === message.id);
+            if (!exists) {
+                if (!message.id) {
+                    message.id = generateId();
                 }
-                return c;
-            });
-        });
-
-
-            if (message.isReply) {
-            // `isReply` true means this message was sent by the other party and received here
-            // Send acknowledgment back for delivery/read
-            try {
-                // Send a delivery confirmation (and immediately send read receipt)
-                const senderUuid = localStorage.getItem('device_uuid') || 'admin';
-                axios.post(route('session.device.command', { uuid }), {
-                    sender_uuid: senderUuid,
-                    command: 'ack',
-                    payload: { messageId: message.id, status: 'delivered', recipient_uuid: uuid }
-                });
-                // Optionally, send a separate read receipt after a short delay
-                setTimeout(() => {
-                    axios.post(route('session.device.command', { uuid }), {
-                        sender_uuid: senderUuid,
-                        command: 'ack',
-                        payload: { messageId: message.id, status: 'read', recipient_uuid: uuid }
-                    });
-                }, 1000);
-            } catch (error) {
-                console.error('Failed to send read receipt ACK for message', message.id, error);
+                chat = { ...chat, messages: [...chat.messages, message] };
             }
-        }
+
+            return prev.map(c => (c.uuid === uuid ? chat : c));
+        });
     }, [devices]);
 
 
@@ -239,63 +197,12 @@ const ChatManager = ({ auth }) => {
         const onStateChange = (states) => {
             console.log("Connection state changed:", states.current);
             setConnectionState(states.current);
-            // If reconnected, retry any pending messages
-            if (states.current === 'connected') {
-                activeChats.forEach(chat => {
-                    chat.messages
-                        .filter(msg => msg.status === 'error')
-                        .forEach(msg => {
-                            // Attempt to resend
-                            if (auth.user) {
-                                // Admin resending a failed message
-                                const senderUuid = localStorage.getItem('device_uuid') || 'admin';
-                                axios.post(route('session.device.command', { uuid: chat.uuid }), {
-                                    sender_uuid: senderUuid,
-                                    command: 'message',
-                                    payload: { message: msg.text, messageId: msg.id, recipient_uuid: chat.uuid }
-                                }).then(() => {
-                                    // Update status to "sent" on success
-                                    setActiveChats(prev => prev.map(c => {
-                                        if (c.uuid !== chat.uuid) return c;
-                                        return {
-                                            ...c,
-                                            messages: c.messages.map(m => m.id === msg.id
-                                                ? { ...m, status: 'sent' }
-                                                : m
-                                            )
-                                        };
-                                    }));
-                                }).catch(err => console.error('Retry send failed for message', msg.id, err));
-                            } else {
-                                // Device resending a failed message
-                                axios.post(route('devices.message.send'), {
-                                    uuid: chat.uuid,
-                                    sender_uuid: localStorage.getItem('device_uuid'),
-                                    recipient_uuid: 'admin',
-                                    message: msg.text,
-                                    messageId: msg.id
-                                }).then(() => {
-                                    setActiveChats(prev => prev.map(c => {
-                                        if (c.uuid !== chat.uuid) return c;
-                                        return {
-                                            ...c,
-                                            messages: c.messages.map(m => m.id === msg.id
-                                                ? { ...m, status: 'sent' }
-                                                : m
-                                            )
-                                        };
-                                    }));
-                                }).catch(err => console.error('Retry send (device) failed for', msg.id, err));
-                            }
-                        });
-                });
-            }
         };
         pusherConnection.bind('state_change', onStateChange);
         return () => {
             pusherConnection.unbind('state_change', onStateChange);
         };
-    }, [activeChats, auth.user]);
+    }, []);
 
 
     useEffect(() => {

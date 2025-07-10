@@ -26,6 +26,8 @@ const DeviceChatInput = ({ uuid, onMessageSent }) => {
                 recipient_uuid: 'admin',
                 message: trimmed,
                 messageId: tempId
+            }, {
+                headers: { 'X-Socket-Id': window.Echo.socketId() }
             });
             console.log('DeviceChatInput: Message sent successfully.');
             // Device will wait for admin's ACK for delivered/read status
@@ -56,6 +58,8 @@ const DeviceChatInput = ({ uuid, onMessageSent }) => {
                 message: '',    // no actual message
                 ack: true,
                 typing: true    // custom flag to indicate typing
+            }, {
+                headers: { 'X-Socket-Id': window.Echo.socketId() }
             });
         } catch (err) {
             console.error('Failed to send device typing indicator', err);

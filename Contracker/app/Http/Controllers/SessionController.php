@@ -250,7 +250,7 @@ class SessionController extends Controller
 
         if ($validated['command'] === 'typing') {
             // Admin typing indicator
-            broadcast(new DeviceCommand($uuid, 'typing', ['recipient_uuid' => $uuid], $senderUuid));
+            broadcast(new DeviceCommand($uuid, 'typing', ['recipient_uuid' => $uuid], $senderUuid))->toOthers();
             return response()->json(['status' => 'Typing signal broadcast']);
         }
 
@@ -263,9 +263,9 @@ class SessionController extends Controller
                 'message' => $messageText,
                 'messageId' => $messageId,
                 'recipient_uuid' => $uuid
-            ], $senderUuid));
+            ], $senderUuid))->toOthers();
             // Also broadcast to other admins so everyone sees the sent message
-            broadcast(new DeviceMessage($uuid, $messageText, 'Admin', $messageId, $senderUuid, $uuid));
+            broadcast(new DeviceMessage($uuid, $messageText, 'Admin', $messageId, $senderUuid, $uuid))->toOthers();
             $senderId = $senderUuid;
             // Store in DB for history (sender is admin, receiver is device)
             \Illuminate\Support\Facades\DB::table('contracker_messages')->insert([
@@ -281,7 +281,7 @@ class SessionController extends Controller
         }
 
         // If this is an acknowledgment or other command (typing, ack, etc.)
-        broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? [], $senderUuid));
+        broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? [], $senderUuid))->toOthers();
         return response()->json(['status' => 'Command sent']);
     }
 
