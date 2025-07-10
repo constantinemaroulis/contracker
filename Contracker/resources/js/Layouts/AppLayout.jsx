@@ -32,6 +32,9 @@ export default function AppLayout({ header, children }) {
                                 <NavLink href={route('devices.list')} active={route().current('devices.list')}>
                                     Device Management
                                 </NavLink>
+                                <NavLink href={route('messages.search')} active={route().current('messages.search')}>
+                                    Message Search
+                                </NavLink>
                             </div>
                         </div>
 

@@ -54,6 +54,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Geofence', ['jobId' => $jobId]);
     })->name('geofence');
 
+    // Message Search Page
+    Route::get('/messages/search', [MessageController::class, 'searchPage'])->name('messages.search');
+
 
 
 

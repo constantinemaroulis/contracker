@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import PersistentChatWindow from './PersistentChatWindow';
-import { usePage } from '@inertiajs/react';
+import BuddyList from './BuddyList';
 import axios from 'axios';
 
 import { route } from 'ziggy-js';
@@ -283,30 +283,31 @@ const ChatManager = ({ auth }) => {
     }, [loggedIn, addMessage, openChat]);
 
     return (
-        <div className="fixed bottom-0 right-0 z-50 flex flex-row-reverse items-end p-4 space-x-4 space-x-reverse">
-            {activeChats.map(chat => (
-                <PersistentChatWindow
-                    key={chat.uuid}
-                    chat={{ ...chat, connectionState }}
-                    auth={auth}
-                    onClose={() => closeChat(chat.uuid)}
-                    onMinimize={() => minimizeChat(chat.uuid)}
-                    onMessageSent={(text, tempId) => {
-                        // Optimistically add the new message
-                        const message = {
-                            id: tempId || generateId(),
-                            sender: 'You',
-                            text,
-                            isReply: false,
-                            timestamp: new Date(),
-                            status: 'sent'
-
-                        };
-                        addMessage(chat.uuid, message);
-                    }}
-                />
-            ))}
-        </div>
+        <>
+            <div className="fixed bottom-0 right-0 z-50 flex flex-row-reverse items-end p-4 space-x-4 space-x-reverse">
+                {activeChats.map(chat => (
+                    <PersistentChatWindow
+                        key={chat.uuid}
+                        chat={{ ...chat, connectionState }}
+                        auth={auth}
+                        onClose={() => closeChat(chat.uuid)}
+                        onMinimize={() => minimizeChat(chat.uuid)}
+                        onMessageSent={(text, tempId) => {
+                            const message = {
+                                id: tempId || generateId(),
+                                sender: 'You',
+                                text,
+                                isReply: false,
+                                timestamp: new Date(),
+                                status: 'sent'
+                            };
+                            addMessage(chat.uuid, message);
+                        }}
+                    />
+                ))}
+            </div>
+            <BuddyList devices={devices} onOpen={openChat} />
+        </>
     );
 };
 
