@@ -23,7 +23,7 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/devices', [SessionController::class, 'listDevices'])->name('devices.list');
+
 
 
     Route::get('/devices/{uuid}/messages', [MessageController::class, 'history'])->name('devices.messages.history');
@@ -31,6 +31,7 @@ Route::get('/devices', [SessionController::class, 'listDevices'])->name('devices
 
     Route::put('/devices/messages/{id}', [MessageController::class, 'update'])->name('devices.message.update');
     Route::delete('/devices/messages/{id}', [MessageController::class, 'destroy'])->name('devices.message.delete');
+
 
 // Authenticated User Routes
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -44,7 +45,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Devices Page
-    Route::get('/devices', [SessionController::class, 'listDevices'])->name('devices.list');
+    
 
     // Jobs and Geofence Pages
     Route::get('/jobs', function () {
@@ -100,7 +101,7 @@ Route::middleware('web')->group(function () {
     Route::get('/session/job-location/{jobId}', [SessionController::class, 'getJobLocation'])->name('session.getJobLocation');
     Route::post('/session/save-geofence', [SessionController::class, 'saveGeofence'])->name('session.saveGeofence');
 
-
+Route::get('/devices', [SessionController::class, 'listDevices'])->name('devices.list');
 
 });
 
