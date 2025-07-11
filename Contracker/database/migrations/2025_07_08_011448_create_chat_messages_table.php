@@ -16,10 +16,10 @@ return new class extends Migration
         Schema::create('contracker_messages', function (Blueprint $table) {
             // Primary key: UUID id (with default generation for supported databases)
             if (Schema::getConnection()->getDriverName() === 'pgsql') {
-                $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
+                $table->uuid('id')->primary()->unique()->default(DB::raw('gen_random_uuid()'));
             } else {
                 // MySQL 8+ allows UUID() function as default (wrapped in parentheses):contentReference[oaicite:6]{index=6}
-                $table->uuid('id')->primary()->default(DB::raw('(UUID())'));
+                $table->uuid('id')->primary()->unique()->default(DB::raw('(UUID())'));
             }
 
             // Conversation ID to group messages (indexed for faster queries by conversation)
@@ -41,6 +41,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists('chat_messages');
+        Schema::dropIfExists('contracker_messages');
     }
 };
