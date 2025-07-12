@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout';
 import { Head } from '@inertiajs/react';
+import DeviceDetailsModal from '@/Components/DeviceDetailsModal';
 
 export default function Devices({ auth }) {
     const [devices, setDevices] = useState([]);
+    const [selectedDevice, setSelectedDevice] = useState(null);
 
     // This effect can remain to keep the device list fresh
     useEffect(() => {
@@ -65,6 +67,13 @@ export default function Devices({ auth }) {
         }
     };
 
+    const groupedDevices = devices.reduce((acc, device) => {
+        const key = device.job_no || device.job_id || 'Unassigned';
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(device);
+        return acc;
+    }, {});
+
     return (
         <AppLayout
             header={<h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Device Management</h2>}
@@ -75,61 +84,56 @@ export default function Devices({ auth }) {
                     <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900 dark:text-gray-100">
                             <h1 className="text-2xl font-bold mb-4">Connected Devices</h1>
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 shadow">
-                                    <thead>
-                                        <tr className="bg-gray-100 dark:bg-gray-600 text-left">
-                                            <th className="px-4 py-2 border dark:border-gray-600">Name</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Job ID</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Device Type</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Remote IP</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Last Seen</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Last Ping</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Status</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {devices && devices.length > 0 ? (
-                                            devices.map(device => (
-                                                <tr key={device.uuid} className="border-t dark:border-gray-600">
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{device.name || 'Unnamed'}</td>
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{device.job_id || '-'}</td>
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{device.device_type || 'N/A'}</td>
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{device.public_ip || 'N/A'}</td>
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{formatDateTimeNY(device.last_seen)}</td>
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{device.last_ping !== null ? formatTimeAgo(device.last_ping) : 'Never'}</td>
-                                                    <td className="px-4 py-2 border font-bold">
-                                                        {device.online ? (
-                                                            <span className="text-green-500">✔ Online</span>
-                                                        ) : (
-                                                            <span className="text-red-500">✖ Offline</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-4 py-2 border dark:border-gray-600">
-                                                        <button
-                                                            onClick={() => handleChatClick(device)}
-                                                            className={`${device.online ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'} hover:underline`}
-                                                        >
-                                                            Chat
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan="8" className="p-4 text-center">
-                                                    No devices found or still loading...
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                            {devices && devices.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {Object.entries(groupedDevices).map(([jobKey, group]) => (
+                                        <div key={jobKey} className="p-4 border dark:border-gray-600 rounded shadow bg-white dark:bg-gray-700">
+                                            <h2 className="text-lg font-semibold mb-2">Job {jobKey}</h2>
+                                            <div className="space-y-1 text-sm">
+                                                {group.map(device => (
+                                                    <div key={device.uuid} className="flex items-center justify-between border-b last:border-none pb-1">
+                                                        <span>
+                                                            {device.name || 'Unnamed'}{' '}
+                                                            {device.online ? (
+                                                                <span className="text-green-500 font-bold">✔ Online</span>
+                                                            ) : (
+                                                                <span className="text-red-500 font-bold">✖ Offline</span>
+                                                            )}
+                                                        </span>
+                                                        <div className="space-x-2">
+                                                            <button
+                                                                onClick={() => handleChatClick(device)}
+                                                                className={`${device.online ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'} hover:underline text-sm`}
+                                                            >
+                                                                Chat
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setSelectedDevice(device)}
+                                                                className="text-gray-600 dark:text-gray-300 hover:underline text-sm"
+                                                            >
+                                                                More
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div>No devices found or still loading...</div>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
+            <DeviceDetailsModal
+                show={!!selectedDevice}
+                onClose={() => setSelectedDevice(null)}
+                device={selectedDevice}
+                formatDateTimeNY={formatDateTimeNY}
+                formatTimeAgo={formatTimeAgo}
+            />
         </AppLayout>
     );
 }

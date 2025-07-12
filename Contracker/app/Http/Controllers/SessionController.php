@@ -9,6 +9,7 @@ use App\Models\ContrackerDevice;
 use App\Models\ContrackerJob;
 use App\Models\ContrackerJobLocation;
 use App\Models\ContrackerJobGeofence;
+use App\Models\ChatMessage;
 
 use Inertia\Inertia;
 use Inertia\Response;
@@ -107,9 +108,9 @@ class SessionController extends Controller
             $device = ContrackerDevice::where('uuid', $uuid)->firstOrFail();
             $jobLocation = ContrackerJobLocation::where('job_id', $device->job_id)->first();
 
-            if (!$jobLocation) {
+            /*if (!$jobLocation) {
                 return response()->json(['error' => 'Job location not found'], 404);
-            }
+            }*/
 
             // Custom distance threshold (meters)
             $distanceThreshold = 200;
@@ -222,7 +223,7 @@ class SessionController extends Controller
     {
         /** @var \Carbon\Carbon $now */
         $now = now();
-        $devices = ContrackerDevice::all()->map(function ($device) use ($now) {
+        $devices = ContrackerDevice::with(['jobLocation.job'])->get()->map(function ($device) use ($now) {
             $device->online = $device->last_seen && ($now->diffInMinutes($device->last_seen)*-1) <= 3; // Device is online if last seen within 5 minutes
             $device->last_ping = $now->diffInMinutes($device->last_seen)*-1;
             return $device;
@@ -250,12 +251,12 @@ class SessionController extends Controller
 
         if ($validated['command'] === 'typing') {
             // Admin typing indicator
-            broadcast(new DeviceCommand($uuid, 'typing', ['recipient_uuid' => $uuid], $senderUuid));
+            broadcast(new DeviceCommand($uuid, 'typing', ['recipient_uuid' => $uuid], $senderUuid))->toOthers();
             return response()->json(['status' => 'Typing signal broadcast']);
         }
 
-        // If admin is sending a chat message  if ($validated['command'] === 'message' && isset($validated['payload']['message'])) {
-        if ($validated['command'] === 'message') {
+        // If admin is sending a chat message
+        if ($validated['command'] === 'message' && isset($validated['payload']['message'])) {
             $messageText = $validated['payload']['message'];
             $messageId = $validated['payload']['messageId'] ?? null;
             // Broadcast chat message to the device's channel
@@ -263,23 +264,24 @@ class SessionController extends Controller
                 'message' => $messageText,
                 'messageId' => $messageId,
                 'recipient_uuid' => $uuid
-            ], $senderUuid));
+            ], $senderUuid))->toOthers();
+            // Also broadcast to other admins so everyone sees the sent message
+            broadcast(new DeviceMessage($uuid, $messageText, 'Admin', $messageId, $senderUuid, $uuid))->toOthers();
             $senderId = $senderUuid;
             // Store in DB for history (sender is admin, receiver is device)
-            \Illuminate\Support\Facades\DB::table('contracker_messages')->insert([
+            ChatMessage::create([
                 'conversation_id' => $uuid,
                 'sender_id' => $senderId,
                 'receiver_id' => $uuid,
                 'message' => $messageText,
-                'created_at' => now(),
-                'updated_at' => now(),
-                'read_at' => null  // device has not read yet
+                'status' => 'sent',
+                'read_at' => null,
             ]);
             return response()->json(['status' => 'Message sent']);
         }
 
         // If this is an acknowledgment or other command (typing, ack, etc.)
-        broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? [], $senderUuid));
+        broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? [], $senderUuid))->toOthers();
         return response()->json(['status' => 'Command sent']);
     }
 

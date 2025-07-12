@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Events\DeviceMessage;
 use App\Events\DeviceCommand;
 use App\Models\ContrackerDevice;
+use App\Models\ChatMessage;
+use Inertia\Inertia;
 
 class MessageController extends Controller
 {
@@ -18,6 +20,7 @@ class MessageController extends Controller
             'messageId' => 'sometimes|string',
             'ack' => 'sometimes|boolean',
             'status' => 'sometimes|string',
+            'typing' => 'sometimes|boolean',
             'sender_uuid' => 'sometimes|string',
             'recipient_uuid' => 'sometimes|string'
         ]);
@@ -27,20 +30,20 @@ class MessageController extends Controller
         $senderUuid = $validated['sender_uuid'] ?? $deviceUuid;
         $recipientUuid = $validated['recipient_uuid'] ?? 'admin';
 
+        if (!empty($validated['typing'])) {
+            // Device is notifying that it is typing
+            broadcast(new DeviceCommand($deviceUuid, 'typing', ['recipient_uuid' => $recipientUuid], $senderUuid))->toOthers();
+            return response()->json(['status' => 'Typing signal sent']);
+        }
+
         if (!empty($validated['ack']) && isset($validated['messageId'], $validated['status'])) {
             // This is an acknowledgment from a device that a message was delivered/read.
             broadcast(new DeviceCommand($deviceUuid, 'ack', [
                 'messageId' => $validated['messageId'],
                 'status' => $validated['status'],
                 'recipient_uuid' => $recipientUuid
-            ], $senderUuid));
+            ], $senderUuid))->toOthers();
             return response()->json(['status' => 'ACK broadcast']);
-        }
-
-        if (!empty($validated['ack']) && !empty($validated['typing'])) {
-            // Device is notifying that it is typing
-            broadcast(new DeviceCommand($deviceUuid, 'typing', ['recipient_uuid' => $recipientUuid], $senderUuid));
-            return response()->json(['status' => 'Typing signal sent']);
         }
 
         // Determine sender and receiver for storage
@@ -52,17 +55,16 @@ class MessageController extends Controller
         }
 
         // Broadcast DeviceMessage event to admin listeners
-        broadcast(new DeviceMessage($deviceUuid, $text, $senderName, $validated['messageId'] ?? null, $senderUuid, $recipientUuid));
+        broadcast(new DeviceMessage($deviceUuid, $text, $senderName, $validated['messageId'] ?? null, $senderUuid, $recipientUuid))->toOthers();
 
-        // Store the message in the database for history/search (as not read yet by admin)
-        \Illuminate\Support\Facades\DB::table('contracker_messages')->insert([
+        // Store the message in the database for history/search
+        ChatMessage::create([
             'conversation_id' => $deviceUuid,
             'sender_id' => $senderUuid,
             'receiver_id' => $recipientUuid,
             'message' => $text,
-            'created_at' => now(),
-            'updated_at' => now(),
-            'read_at' => null           // admin has not read it at send time
+            'status' => 'sent',
+            'read_at' => null,
         ]);
 
         return response()->json(['status' => 'Message sent']);
@@ -71,8 +73,7 @@ class MessageController extends Controller
     public function history(Request $request, $uuid)
     {
         // Fetch recent messages for a given device UUID (conversation)
-        $query = \Illuminate\Support\Facades\DB::table('contracker_messages')
-                    ->where('conversation_id', $uuid)
+        $query = ChatMessage::where('conversation_id', $uuid)
                     ->orderBy('created_at', 'asc');
         // If a "before" query param is provided, use it to paginate (fetch messages before a given ID or timestamp)
         if ($request->query('before')) {
@@ -88,8 +89,7 @@ class MessageController extends Controller
     {
         $term = $request->validate(['q' => 'required|string'])['q'];
         // Search messages in this conversation for the term (case-insensitive)
-        $results = \Illuminate\Support\Facades\DB::table('contracker_messages')
-                    ->where('conversation_id', $uuid)
+        $results = ChatMessage::where('conversation_id', $uuid)
                     ->where('message', 'LIKE', '%' . $term . '%')
                     ->orderBy('created_at', 'asc')
                     ->get();
@@ -107,8 +107,7 @@ class MessageController extends Controller
 
         try {
             // Update message in database
-            \Illuminate\Support\Facades\DB::table('contracker_messages')
-                ->where('id', $id)
+            ChatMessage::where('id', $id)
                 ->update(['message' => $newText, 'updated_at' => now()]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Update failed'], 500);
@@ -125,14 +124,14 @@ class MessageController extends Controller
     public function destroy(Request $request, $id)
     {
         // Find the message and determine conversation/device
-        $message = \Illuminate\Support\Facades\DB::table('contracker_messages')->where('id', $id)->first();
+        $message = ChatMessage::find($id);
         if (!$message) {
             return response()->json(['error' => 'Message not found'], 404);
         }
         $deviceUuid = $message->conversation_id;
 
         try {
-            \Illuminate\Support\Facades\DB::table('contracker_messages')->where('id', $id)->delete();
+            ChatMessage::where('id', $id)->delete();
         } catch (\Exception $e) {
             return response()->json(['error' => 'Delete failed'], 500);
         }
@@ -140,5 +139,22 @@ class MessageController extends Controller
         // Broadcast a deletion event
         broadcast(new DeviceCommand($deviceUuid, 'delete', ['messageId' => $id]));
         return response()->json(['status' => 'Message deleted']);
+    }
+
+    public function searchPage(Request $request)
+    {
+        $query = $request->query('q');
+        $results = [];
+        if ($query) {
+            $results = ChatMessage::where('message', 'LIKE', "%{$query}%")
+                ->orderBy('created_at', 'desc')
+                ->limit(50)
+                ->get();
+        }
+        return Inertia::render('MessageSearch', [
+            'auth' => ['user' => $request->user()],
+            'initialResults' => $results,
+            'query' => $query,
+        ]);
     }
 }
