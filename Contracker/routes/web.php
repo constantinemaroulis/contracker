@@ -4,6 +4,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\CostCodeAllocatorController;
+use App\Http\Controllers\RemoteControlController;
+use App\Http\Controllers\RemoteAssistController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -57,6 +59,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/jobs/{jobId}/allocator', [CostCodeAllocatorController::class, 'index'])->name('costcode.allocator');
     Route::get('/session/jobs/{jobId}/allocator-data', [CostCodeAllocatorController::class, 'data'])->name('costcode.allocator.data');
+    // Message Search Page
+    Route::get('/messages/search', [MessageController::class, 'searchPage'])->name('messages.search');
+
+    // Remote Control Page (screen sharing initiated by user)
+    Route::get('/remote-control', [\App\Http\Controllers\RemoteControlController::class, 'index'])->name('remote.control');
+    Route::get('/remote-assist/{uuid}', [RemoteAssistController::class, 'show'])->name('remote.assist');
 
 
 
