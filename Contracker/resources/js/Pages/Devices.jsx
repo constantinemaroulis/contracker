@@ -75,6 +75,8 @@ export default function Devices({ auth }) {
                     <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900 dark:text-gray-100">
                             <h1 className="text-2xl font-bold mb-4">Connected Devices</h1>
+                            {devices && devices.length > 0 ? (
+                                            devices.map(device => (
                             <div className="overflow-x-auto">
                                 <table className="min-w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 shadow">
                                     <thead>
@@ -90,11 +92,10 @@ export default function Devices({ auth }) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {devices && devices.length > 0 ? (
-                                            devices.map(device => (
                                                 <tr key={device.uuid} className="border-t dark:border-gray-600">
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{device.name || 'Unnamed'}</td>
+
                                                     <td className="px-4 py-2 border dark:border-gray-600">{device.job_id || '-'}</td>
+                                                    <td className="px-4 py-2 border dark:border-gray-600">{device.name || 'Unnamed'}</td>
                                                     <td className="px-4 py-2 border dark:border-gray-600">{device.device_type || 'N/A'}</td>
                                                     <td className="px-4 py-2 border dark:border-gray-600">{device.public_ip || 'N/A'}</td>
                                                     <td className="px-4 py-2 border dark:border-gray-600">{formatDateTimeNY(device.last_seen)}</td>
@@ -115,17 +116,15 @@ export default function Devices({ auth }) {
                                                         </button>
                                                     </td>
                                                 </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan="8" className="p-4 text-center">
-                                                    No devices found or still loading...
-                                                </td>
-                                            </tr>
-                                        )}
                                     </tbody>
                                 </table>
                             </div>
+                             ))
+                                        ) : (
+                                            <div>
+                                                    No devices found or still loading...
+                                            </div>
+                                        )}
                         </div>
                     </div>
                 </div>
