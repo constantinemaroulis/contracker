@@ -107,9 +107,9 @@ class SessionController extends Controller
             $device = ContrackerDevice::where('uuid', $uuid)->firstOrFail();
             $jobLocation = ContrackerJobLocation::where('job_id', $device->job_id)->first();
 
-            if (!$jobLocation) {
+            /*if (!$jobLocation) {
                 return response()->json(['error' => 'Job location not found'], 404);
-            }
+            }*/
 
             // Custom distance threshold (meters)
             $distanceThreshold = 200;
