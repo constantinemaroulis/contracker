@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\CostCodeAllocatorController;
 use App\Http\Controllers\RemoteControlController;
 use App\Http\Controllers\RemoteAssistController;
 use Illuminate\Foundation\Application;
@@ -56,6 +57,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Geofence', ['jobId' => $jobId]);
     })->name('geofence');
 
+    Route::get('/jobs/{jobId}/allocator', [CostCodeAllocatorController::class, 'index'])->name('costcode.allocator');
+    Route::get('/session/jobs/{jobId}/allocator-data', [CostCodeAllocatorController::class, 'data'])->name('costcode.allocator.data');
     // Message Search Page
     Route::get('/messages/search', [MessageController::class, 'searchPage'])->name('messages.search');
 

@@ -76,55 +76,70 @@ export default function Devices({ auth }) {
                         <div className="p-6 text-gray-900 dark:text-gray-100">
                             <h1 className="text-2xl font-bold mb-4">Connected Devices</h1>
                             {devices && devices.length > 0 ? (
-                                            devices.map(device => (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 shadow">
-                                    <thead>
-                                        <tr className="bg-gray-100 dark:bg-gray-600 text-left">
-                                            <th className="px-4 py-2 border dark:border-gray-600">Name</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Job ID</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Device Type</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Remote IP</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Last Seen</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Last Ping</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Status</th>
-                                            <th className="px-4 py-2 border dark:border-gray-600">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                                <tr key={device.uuid} className="border-t dark:border-gray-600">
-
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{device.job_id || '-'}</td>
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{device.name || 'Unnamed'}</td>
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{device.device_type || 'N/A'}</td>
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{device.public_ip || 'N/A'}</td>
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{formatDateTimeNY(device.last_seen)}</td>
-                                                    <td className="px-4 py-2 border dark:border-gray-600">{device.last_ping !== null ? formatTimeAgo(device.last_ping) : 'Never'}</td>
-                                                    <td className="px-4 py-2 border font-bold">
-                                                        {device.online ? (
-                                                            <span className="text-green-500">✔ Online</span>
-                                                        ) : (
-                                                            <span className="text-red-500">✖ Offline</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-4 py-2 border dark:border-gray-600">
-                                                        <button
-                                                            onClick={() => handleChatClick(device)}
-                                                            className={`${device.online ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'} hover:underline`}
-                                                        >
-                                                            Chat
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                             ))
-                                        ) : (
-                                            <div>
-                                                    No devices found or still loading...
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {devices.map(device => (
+                                        <div
+                                            key={device.uuid}
+                                            className="p-4 border dark:border-gray-600 rounded shadow bg-white dark:bg-gray-700"
+                                        >
+                                            <h2 className="text-lg font-semibold mb-2">
+                                                Job {device.job_no ?? device.job_id ?? '-'}
+                                            </h2>
+                                            <div className="space-y-1 text-sm">
+                                                <div>
+                                                    <strong>Name:</strong> {device.name || 'Unnamed'}
+                                                </div>
+                                                <div>
+                                                    <strong>UUID:</strong> {device.uuid}
+                                                </div>
+                                                <div>
+                                                    <strong>Device Type:</strong> {device.device_type || 'N/A'}
+                                                </div>
+                                                <div>
+                                                    <strong>Local IP:</strong> {device.local_ip || 'N/A'}
+                                                </div>
+                                                <div>
+                                                    <strong>Public IP:</strong> {device.public_ip || 'N/A'}
+                                                </div>
+                                                <div>
+                                                    <strong>MAC:</strong> {device.mac_address || 'N/A'}
+                                                </div>
+                                                <div>
+                                                    <strong>Latitude:</strong> {device.latitude ?? 'N/A'}
+                                                </div>
+                                                <div>
+                                                    <strong>Longitude:</strong> {device.longitude ?? 'N/A'}
+                                                </div>
+                                                <div>
+                                                    <strong>Accuracy:</strong> {device.accuracy ?? 'N/A'}
+                                                </div>
+                                                <div>
+                                                    <strong>Last Seen:</strong> {formatDateTimeNY(device.last_seen)}
+                                                </div>
+                                                <div>
+                                                    <strong>Last Ping:</strong>{' '}
+                                                    {device.last_ping !== null ? formatTimeAgo(device.last_ping) : 'Never'}
+                                                </div>
+                                                <div className="font-bold">
+                                                    {device.online ? (
+                                                        <span className="text-green-500">✔ Online</span>
+                                                    ) : (
+                                                        <span className="text-red-500">✖ Offline</span>
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
+                                            <button
+                                                onClick={() => handleChatClick(device)}
+                                                className={`${device.online ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'} hover:underline mt-2`}
+                                            >
+                                                Chat
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div>No devices found or still loading...</div>
+                            )}
                         </div>
                     </div>
                 </div>
