@@ -4,8 +4,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\CostCodeAllocatorController;
-use App\Http\Controllers\RemoteControlController;
-use App\Http\Controllers\RemoteAssistController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
