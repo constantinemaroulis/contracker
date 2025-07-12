@@ -38,6 +38,10 @@ class ContrackerDevice extends Model
         'last_seen' => 'datetime',
     ];
 
+    protected $appends = [
+        'job_no',
+    ];
+
     protected $hidden = [
         'created_at',
         'updated_at',
@@ -56,6 +60,13 @@ class ContrackerDevice extends Model
     public function jobLocation()
     {
         return $this->belongsTo(ContrackerJobLocation::class, 'job_id');
+    }
+
+    public function getJobNoAttribute()
+    {
+        return $this->jobLocation && $this->jobLocation->job
+            ? $this->jobLocation->job->job_no
+            : null;
     }
 
 

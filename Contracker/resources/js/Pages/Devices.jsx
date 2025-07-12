@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout';
 import { Head } from '@inertiajs/react';
+import DeviceDetailsModal from '@/Components/DeviceDetailsModal';
 
 export default function Devices({ auth }) {
     const [devices, setDevices] = useState([]);
+    const [selectedDevice, setSelectedDevice] = useState(null);
 
     // This effect can remain to keep the device list fresh
     useEffect(() => {
@@ -65,6 +67,13 @@ export default function Devices({ auth }) {
         }
     };
 
+    const groupedDevices = devices.reduce((acc, device) => {
+        const key = device.job_no || device.job_id || 'Unassigned';
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(device);
+        return acc;
+    }, {});
+
     return (
         <AppLayout
             header={<h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Device Management</h2>}
@@ -77,63 +86,37 @@ export default function Devices({ auth }) {
                             <h1 className="text-2xl font-bold mb-4">Connected Devices</h1>
                             {devices && devices.length > 0 ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {devices.map(device => (
-                                        <div
-                                            key={device.uuid}
-                                            className="p-4 border dark:border-gray-600 rounded shadow bg-white dark:bg-gray-700"
-                                        >
-                                            <h2 className="text-lg font-semibold mb-2">
-                                                Job {device.job_no ?? device.job_id ?? '-'}
-                                            </h2>
+                                    {Object.entries(groupedDevices).map(([jobKey, group]) => (
+                                        <div key={jobKey} className="p-4 border dark:border-gray-600 rounded shadow bg-white dark:bg-gray-700">
+                                            <h2 className="text-lg font-semibold mb-2">Job {jobKey}</h2>
                                             <div className="space-y-1 text-sm">
-                                                <div>
-                                                    <strong>Name:</strong> {device.name || 'Unnamed'}
-                                                </div>
-                                                <div>
-                                                    <strong>UUID:</strong> {device.uuid}
-                                                </div>
-                                                <div>
-                                                    <strong>Device Type:</strong> {device.device_type || 'N/A'}
-                                                </div>
-                                                <div>
-                                                    <strong>Local IP:</strong> {device.local_ip || 'N/A'}
-                                                </div>
-                                                <div>
-                                                    <strong>Public IP:</strong> {device.public_ip || 'N/A'}
-                                                </div>
-                                                <div>
-                                                    <strong>MAC:</strong> {device.mac_address || 'N/A'}
-                                                </div>
-                                                <div>
-                                                    <strong>Latitude:</strong> {device.latitude ?? 'N/A'}
-                                                </div>
-                                                <div>
-                                                    <strong>Longitude:</strong> {device.longitude ?? 'N/A'}
-                                                </div>
-                                                <div>
-                                                    <strong>Accuracy:</strong> {device.accuracy ?? 'N/A'}
-                                                </div>
-                                                <div>
-                                                    <strong>Last Seen:</strong> {formatDateTimeNY(device.last_seen)}
-                                                </div>
-                                                <div>
-                                                    <strong>Last Ping:</strong>{' '}
-                                                    {device.last_ping !== null ? formatTimeAgo(device.last_ping) : 'Never'}
-                                                </div>
-                                                <div className="font-bold">
-                                                    {device.online ? (
-                                                        <span className="text-green-500">✔ Online</span>
-                                                    ) : (
-                                                        <span className="text-red-500">✖ Offline</span>
-                                                    )}
-                                                </div>
+                                                {group.map(device => (
+                                                    <div key={device.uuid} className="flex items-center justify-between border-b last:border-none pb-1">
+                                                        <span>
+                                                            {device.name || 'Unnamed'}{' '}
+                                                            {device.online ? (
+                                                                <span className="text-green-500 font-bold">✔ Online</span>
+                                                            ) : (
+                                                                <span className="text-red-500 font-bold">✖ Offline</span>
+                                                            )}
+                                                        </span>
+                                                        <div className="space-x-2">
+                                                            <button
+                                                                onClick={() => handleChatClick(device)}
+                                                                className={`${device.online ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'} hover:underline text-sm`}
+                                                            >
+                                                                Chat
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setSelectedDevice(device)}
+                                                                className="text-gray-600 dark:text-gray-300 hover:underline text-sm"
+                                                            >
+                                                                More
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                            <button
-                                                onClick={() => handleChatClick(device)}
-                                                className={`${device.online ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'} hover:underline mt-2`}
-                                            >
-                                                Chat
-                                            </button>
                                         </div>
                                     ))}
                                 </div>
@@ -144,6 +127,13 @@ export default function Devices({ auth }) {
                     </div>
                 </div>
             </div>
+            <DeviceDetailsModal
+                show={!!selectedDevice}
+                onClose={() => setSelectedDevice(null)}
+                device={selectedDevice}
+                formatDateTimeNY={formatDateTimeNY}
+                formatTimeAgo={formatTimeAgo}
+            />
         </AppLayout>
     );
 }

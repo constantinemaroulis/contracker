@@ -108,9 +108,9 @@ class SessionController extends Controller
             $device = ContrackerDevice::where('uuid', $uuid)->firstOrFail();
             $jobLocation = ContrackerJobLocation::where('job_id', $device->job_id)->first();
 
-            if (!$jobLocation) {
+            /*if (!$jobLocation) {
                 return response()->json(['error' => 'Job location not found'], 404);
-            }
+            }*/
 
             // Custom distance threshold (meters)
             $distanceThreshold = 200;
@@ -223,7 +223,7 @@ class SessionController extends Controller
     {
         /** @var \Carbon\Carbon $now */
         $now = now();
-        $devices = ContrackerDevice::all()->map(function ($device) use ($now) {
+        $devices = ContrackerDevice::with(['jobLocation.job'])->get()->map(function ($device) use ($now) {
             $device->online = $device->last_seen && ($now->diffInMinutes($device->last_seen)*-1) <= 3; // Device is online if last seen within 5 minutes
             $device->last_ping = $now->diffInMinutes($device->last_seen)*-1;
             return $device;
