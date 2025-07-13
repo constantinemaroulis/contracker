@@ -64,3 +64,4 @@ export default function mount(el, data) {
   const root = createRoot(el);
   root.render(<Allocator {...data} />);
 }
+
