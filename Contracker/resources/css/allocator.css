@@ -13,3 +13,28 @@ body {
     margin: 0;
     font-family: sans-serif;
 }
+
+/* Allocator specific styles */
+.allocator-container {
+    display: flex;
+    gap: 2rem;
+}
+.cost-codes, .laborers {
+    border: 1px solid #ccc;
+    padding: 1rem;
+    background: #f9f9f9;
+}
+.cost-code {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.laborer {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
