@@ -8,6 +8,37 @@ export default function RemoteAssist({ auth, uuid }) {
     const videoRef = useRef(null);
     const [pc, setPc] = useState(null);
     const [dataChannel, setDataChannel] = useState(null);
+    const [stream, setStream] = useState(null);
+    const [shareStarted, setShareStarted] = useState(false);
+    const [pendingOffer, setPendingOffer] = useState(null);
+
+    const handleOffer = async (offer) => {
+        if (!pc || !stream) return;
+        const desc = new RTCSessionDescription(offer);
+        await pc.setRemoteDescription(desc);
+        stream.getTracks().forEach(t => pc.addTrack(t, stream));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        axios.post(route('session.device.command', { uuid }), {
+            command: 'control-answer',
+            payload: { answer },
+        });
+    };
+
+    const startSharing = async () => {
+        try {
+            const s = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            setStream(s);
+            if (videoRef.current) videoRef.current.srcObject = s;
+            setShareStarted(true);
+            if (pendingOffer) {
+                await handleOffer(pendingOffer);
+                setPendingOffer(null);
+            }
+        } catch (err) {
+            console.error('Failed to capture screen', err);
+        }
+    };
 
     useEffect(() => {
         if (!uuid) return;
@@ -42,17 +73,11 @@ export default function RemoteAssist({ auth, uuid }) {
 
         window.Echo.private(`device.${uuid}`).listen('.DeviceCommand', async (e) => {
             if (e.command === 'control-offer') {
-                const desc = new RTCSessionDescription(e.payload.offer);
-                await peer.setRemoteDescription(desc);
-                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                stream.getTracks().forEach(t => peer.addTrack(t, stream));
-                if (videoRef.current) videoRef.current.srcObject = stream;
-                const answer = await peer.createAnswer();
-                await peer.setLocalDescription(answer);
-                axios.post(route('session.device.command', { uuid }), {
-                    command: 'control-answer',
-                    payload: { answer },
-                });
+                if (shareStarted && stream) {
+                    await handleOffer(e.payload.offer);
+                } else {
+                    setPendingOffer(e.payload.offer);
+                }
             } else if (e.command === 'control-candidate' && e.payload.candidate) {
                 await peer.addIceCandidate(new RTCIceCandidate(e.payload.candidate));
             }
@@ -71,6 +96,11 @@ export default function RemoteAssist({ auth, uuid }) {
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 space-y-4">
+                        {!shareStarted && (
+                            <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={startSharing}>
+                                Start Sharing
+                            </button>
+                        )}
                         <video ref={videoRef} autoPlay playsInline className="w-full border rounded" />
                     </div>
                 </div>
