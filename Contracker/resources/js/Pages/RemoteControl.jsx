@@ -6,6 +6,7 @@ import { route } from 'ziggy-js';
 
 export default function RemoteControl({ auth }) {
     const [uuid, setUuid] = useState('');
+    const [devices, setDevices] = useState([]);
     const videoRef = useRef(null);
     const [pc, setPc] = useState(null);
     const [connected, setConnected] = useState(false);
@@ -17,6 +18,21 @@ export default function RemoteControl({ auth }) {
         };
     }, [pc]);
 
+    useEffect(() => {
+        const fetchDevices = () => {
+            axios
+                .get(route('devices.list'))
+                .then(res => {
+                    const online = (res.data.devices || []).filter(d => d.online);
+                    setDevices(online);
+                })
+                .catch(() => {});
+        };
+        fetchDevices();
+        const id = setInterval(fetchDevices, 5000);
+        return () => clearInterval(id);
+    }, []);
+
     const startSession = async () => {
         if (!uuid) return;
         const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
@@ -25,7 +41,11 @@ export default function RemoteControl({ auth }) {
         channel.onopen = () => setConnected(true);
 
         peer.ontrack = e => {
-            if (videoRef.current) videoRef.current.srcObject = e.streams[0];
+            if (videoRef.current) {
+                videoRef.current.srcObject = e.streams[0];
+                const p = videoRef.current.play();
+                if (p && p.catch) p.catch(() => {});
+            }
         };
 
         peer.onicecandidate = e => {
@@ -69,8 +89,13 @@ export default function RemoteControl({ auth }) {
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 space-y-4">
                         <div className="flex space-x-2">
-                            <input value={uuid} onChange={e => setUuid(e.target.value)} placeholder="Device UUID" className="border rounded px-2 py-1 flex-grow" />
-                            <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={startSession}>Connect</button>
+                            <select value={uuid} onChange={e => setUuid(e.target.value)} className="border rounded px-2 py-1 flex-grow">
+                                <option value="">Select Online Device</option>
+                                {devices.map(d => (
+                                    <option key={d.uuid} value={d.uuid}>{d.name || d.uuid}</option>
+                                ))}
+                            </select>
+                            <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={startSession} disabled={!uuid}>Connect</button>
                         </div>
                         <div className="mt-4">
                             <video ref={videoRef} autoPlay playsInline className="w-full border rounded" onMouseMove={e => sendEvent('mousemove', e)} onClick={e => sendEvent('click', e)} onKeyDown={e => sendEvent('keydown', e)} tabIndex="0" />

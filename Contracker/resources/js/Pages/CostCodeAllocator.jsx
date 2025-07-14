@@ -1,12 +1,18 @@
 import { useEffect } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
+import axios from 'axios';
+import { route } from 'ziggy-js';
 
 export default function CostCodeAllocator({ jobId }) {
   useEffect(() => {
-    window.ALLOCATOR_DATA = { jobId, locals: [], costCodes: [], laborers: [] };
-    import('../Allocator/CostCodeAllocatorApp.jsx').then((mod) => {
+    Promise.all([
+      axios.get(route('costcode.allocator.data', { jobId })),
+      import('../Allocator/CostCodeAllocatorApp.jsx'),
+    ]).then(([res, mod]) => {
       const el = document.getElementById('allocator-root');
-      mod.default(el, window.ALLOCATOR_DATA);
+      mod.default(el, res.data);
+    }).catch(err => {
+      console.error('Failed to load allocator', err);
     });
   }, [jobId]);
 
