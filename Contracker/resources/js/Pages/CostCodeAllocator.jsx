@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
+
 import axios from 'axios';
 
 export default function CostCodeAllocator({ jobId }) {
@@ -15,6 +16,9 @@ export default function CostCodeAllocator({ jobId }) {
       window.ReactBeautifulDnd = RBD;
       window.ALLOCATOR_DATA = res.data;
       import('../Allocator/CostCodeAllocatorApp.jsx');
+
+lt(el, window.ALLOCATOR_DATA);
+
     });
   }, [jobId]);
 
