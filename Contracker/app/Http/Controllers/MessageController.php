@@ -8,6 +8,7 @@ use App\Events\DeviceCommand;
 use App\Models\ContrackerDevice;
 use App\Models\ChatMessage;
 use Inertia\Inertia;
+use Illuminate\Log;
 
 class MessageController extends Controller
 {
@@ -67,7 +68,7 @@ class MessageController extends Controller
             'read_at' => null,
         ]);
 
-        Log::info()
+        Log::info();
 
         return response()->json(['status' => 'Message sent']);
     }
