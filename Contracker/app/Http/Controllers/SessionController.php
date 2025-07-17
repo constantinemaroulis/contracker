@@ -10,6 +10,7 @@ use App\Models\ContrackerJob;
 use App\Models\ContrackerJobLocation;
 use App\Models\ContrackerJobGeofence;
 use App\Models\ChatMessage;
+use Illuminate\View\View;
 
 use Inertia\Inertia;
 use Inertia\Response;
@@ -99,7 +100,7 @@ class SessionController extends Controller
     public function getDeviceIp(Request $request)
 
     {
-        return response()->json(['ip' => $request->ip()]);
+        return $request->ip();
     }
 
     public function getDeviceDiff(Request $request, $uuid)
@@ -284,6 +285,7 @@ class SessionController extends Controller
         broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? [], $senderUuid))->toOthers();
         return response()->json(['status' => 'Command sent']);
     }
+
 
 
 }

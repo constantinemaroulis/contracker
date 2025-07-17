@@ -67,6 +67,8 @@ class MessageController extends Controller
             'read_at' => null,
         ]);
 
+        Log::info()
+
         return response()->json(['status' => 'Message sent']);
     }
 
