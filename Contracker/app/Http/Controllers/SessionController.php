@@ -189,6 +189,24 @@ class SessionController extends Controller
         return response()->json(['status' => 'Geofence saved!', 'geofence' => $geofence]);
     }
 
+    public function listGeofences()
+    {
+        $geofences = ContrackerJobLocation::with(['job', 'geofence'])
+            ->whereHas('geofence')
+            ->get()
+            ->map(function ($loc) {
+                return [
+                    'job_id' => $loc->job_id,
+                    'job_no' => $loc->job ? $loc->job->job_no : null,
+                    'latitude' => $loc->latitude,
+                    'longitude' => $loc->longitude,
+                    'boundary_points' => optional($loc->geofence)->boundary_points,
+                ];
+            });
+
+        return response()->json($geofences);
+    }
+
     public function updateDeviceName(Request $request, $uuid)
     {
         $validated = $request->validate([
