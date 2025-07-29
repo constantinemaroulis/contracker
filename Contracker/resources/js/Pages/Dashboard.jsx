@@ -1,4 +1,4 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import SidebarLayout from '@/Layouts/SidebarLayout';
 import UserSessionManager from '@/Components/UserSessionManager';
 import { Head, Link } from '@inertiajs/react';
 import DeviceInfo from '@/Components/DeviceInfo';
@@ -6,7 +6,7 @@ import DeviceMap from '@/Components/DeviceMap';
 
 export default function Dashboard() {
     return (
-        <AuthenticatedLayout
+        <SidebarLayout
             header={
                 <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
                     Dashboard
@@ -36,6 +36,6 @@ export default function Dashboard() {
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </SidebarLayout>
     );
 }
