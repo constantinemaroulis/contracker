@@ -27,6 +27,7 @@ export default function RemoteAssist({ auth, uuid }) {
 
     const startSharing = async () => {
         try {
+
             let s;
             try {
                 s = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
@@ -45,6 +46,7 @@ export default function RemoteAssist({ auth, uuid }) {
                 const p = videoRef.current.play();
                 if (p && p.catch) p.catch(() => {});
             }
+
             setShareStarted(true);
             if (pendingOffer) {
                 await handleOffer(pendingOffer);
@@ -116,6 +118,7 @@ export default function RemoteAssist({ auth, uuid }) {
                                 Start Sharing
                             </button>
                         )}
+<<<<<<< i7q0a4-codex/fix-remote-control-device-selection
                         <video ref={videoRef} autoPlay playsInline muted className="w-full border rounded" />
                     </div>
                 </div>

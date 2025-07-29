@@ -8,6 +8,7 @@ use App\Events\DeviceCommand;
 use App\Models\ContrackerDevice;
 use App\Models\ChatMessage;
 use Inertia\Inertia;
+use Illuminate\Log;
 
 class MessageController extends Controller
 {
@@ -65,6 +66,12 @@ class MessageController extends Controller
             'message' => $text,
             'status' => 'sent',
             'read_at' => null,
+        ]);
+
+        Log::info('Chat message stored', [
+            'device_uuid' => $deviceUuid,
+            'sender' => $senderUuid,
+            'recipient' => $recipientUuid,
         ]);
 
         return response()->json(['status' => 'Message sent']);

@@ -10,6 +10,7 @@ use App\Models\ContrackerJob;
 use App\Models\ContrackerJobLocation;
 use App\Models\ContrackerJobGeofence;
 use App\Models\ChatMessage;
+use Illuminate\View\View;
 
 use Inertia\Inertia;
 use Inertia\Response;
@@ -99,7 +100,7 @@ class SessionController extends Controller
     public function getDeviceIp(Request $request)
 
     {
-        return response()->json(['ip' => $request->ip()]);
+        return $request->ip();
     }
 
     public function getDeviceDiff(Request $request, $uuid)
@@ -112,8 +113,8 @@ class SessionController extends Controller
                 return response()->json(['error' => 'Job location not found'], 404);
             }*/
 
-            // Custom distance threshold (meters)
-            $distanceThreshold = 200;
+            // Distance threshold in meters (configurable)
+            $distanceThreshold = config('contracker.distance_threshold', 200);
 
             // Calculate distance using Haversine formula
             $distance = DB::select("
@@ -188,6 +189,24 @@ class SessionController extends Controller
         return response()->json(['status' => 'Geofence saved!', 'geofence' => $geofence]);
     }
 
+    public function listGeofences()
+    {
+        $geofences = ContrackerJobLocation::with(['job', 'geofence'])
+            ->whereHas('geofence')
+            ->get()
+            ->map(function ($loc) {
+                return [
+                    'job_id' => $loc->job_id,
+                    'job_no' => $loc->job ? $loc->job->job_no : null,
+                    'latitude' => $loc->latitude,
+                    'longitude' => $loc->longitude,
+                    'boundary_points' => optional($loc->geofence)->boundary_points,
+                ];
+            });
+
+        return response()->json($geofences);
+    }
+
     public function updateDeviceName(Request $request, $uuid)
     {
         $validated = $request->validate([
@@ -221,13 +240,7 @@ class SessionController extends Controller
 
     public function listDevices(Request $request)
     {
-        /** @var \Carbon\Carbon $now */
-        $now = now();
-        $devices = ContrackerDevice::with(['jobLocation.job'])->get()->map(function ($device) use ($now) {
-            $device->online = $device->last_seen && ($now->diffInMinutes($device->last_seen)*-1) <= 3; // Device is online if last seen within 5 minutes
-            $device->last_ping = $now->diffInMinutes($device->last_seen)*-1;
-            return $device;
-        });
+        $devices = ContrackerDevice::with(['jobLocation.job'])->get();
 
         if ($request->wantsJson()) {
             return response()->json(['devices' => $devices]);
@@ -284,6 +297,7 @@ class SessionController extends Controller
         broadcast(new DeviceCommand($uuid, $validated['command'], $validated['payload'] ?? [], $senderUuid))->toOthers();
         return response()->json(['status' => 'Command sent']);
     }
+
 
 
 }

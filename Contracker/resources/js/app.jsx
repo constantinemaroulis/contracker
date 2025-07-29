@@ -80,13 +80,13 @@ window.addEventListener('load', () => {
 
 const appName = import.meta.env.VITE_APP_NAME || 'Contracker';
 
-function AppWrapper({ children, auth }) { // Accept auth as a prop
+function AppWrapper({ children, auth, chat }) { // Accept auth as a prop
     useDeviceHeartbeat();
     return (
         <>
             {children}
             {/* Pass auth down to the ChatManager */}
-            <ChatManager auth={auth} />
+            <ChatManager />
             <BroadcastConnectionStatus />
         </>
     );

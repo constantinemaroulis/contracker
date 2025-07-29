@@ -40,6 +40,8 @@ class ContrackerDevice extends Model
 
     protected $appends = [
         'job_no',
+        'online',
+        'last_ping',
     ];
 
     protected $hidden = [
@@ -67,6 +69,32 @@ class ContrackerDevice extends Model
         return $this->jobLocation && $this->jobLocation->job
             ? $this->jobLocation->job->job_no
             : null;
+    }
+
+    /**
+     * Scope for devices considered online based on the last_seen timestamp.
+     */
+    public function scopeOnline($query)
+    {
+        $threshold = config('contracker.online_threshold', 5);
+        return $query->where('last_seen', '>=', now()->subMinutes($threshold));
+    }
+
+    /**
+     * Determine if the device is currently online.
+     */
+    public function getOnlineAttribute(): bool
+    {
+        $threshold = config('contracker.online_threshold', 5);
+        return (bool) ($this->last_seen && $this->last_seen->gt(now()->subMinutes($threshold)));
+    }
+
+    /**
+     * Minutes since the device last pinged the server.
+     */
+    public function getLastPingAttribute(): ?int
+    {
+        return $this->last_seen ? $this->last_seen->diffInMinutes(now()) : null;
     }
 
 
