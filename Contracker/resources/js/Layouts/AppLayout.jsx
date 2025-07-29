@@ -32,6 +32,15 @@ export default function AppLayout({ header, children }) {
                                 <NavLink href={route('devices.list')} active={route().current('devices.list')}>
                                     Device Management
                                 </NavLink>
+                                <NavLink href={route('jobs.list')} active={route().current('jobs.list')}>
+                                    Jobs
+                                </NavLink>
+                                <NavLink href={route('geofences.admin')} active={route().current('geofences.admin')}>
+                                    Geofences
+                                </NavLink>
+                                <NavLink href={route('timeclock')} active={route().current('timeclock')}>
+                                    Timeclock
+                                </NavLink>
                                 <NavLink href={route('messages.search')} active={route().current('messages.search')}>
                                     Message Search
                                 </NavLink>

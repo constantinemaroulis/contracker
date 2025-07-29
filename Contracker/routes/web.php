@@ -58,6 +58,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Geofence', ['jobId' => $jobId]);
     })->name('geofence');
 
+    // Admin overview of all geofences
+    Route::get('/geofences', function () {
+        return Inertia::render('GeofenceAdmin');
+    })->name('geofences.admin');
+
+    Route::get('/timeclock', function () {
+        return Inertia::render('Timeclock');
+    })->name('timeclock');
+
     Route::get('/jobs/{jobId}/allocator', [CostCodeAllocatorController::class, 'index'])->name('costcode.allocator');
     Route::get('/session/jobs/{jobId}/allocator-data', [CostCodeAllocatorController::class, 'data'])->name('costcode.allocator.data');
 
@@ -114,6 +123,12 @@ Route::middleware('web')->group(function () {
     Route::get('/session/jobs', [SessionController::class, 'getJobs'])->name('session.getJobs');
     Route::get('/session/job-location/{jobId}', [SessionController::class, 'getJobLocation'])->name('session.getJobLocation');
     Route::post('/session/save-geofence', [SessionController::class, 'saveGeofence'])->name('session.saveGeofence');
+    Route::get('/session/geofences', [SessionController::class, 'listGeofences'])->name('session.listGeofences');
+
+    // Timeclock endpoints (no auth required)
+    Route::post('/timeclock/jobs/{job}/devices/{uuid}/clock-in', [\App\Http\Controllers\TimeclockController::class, 'clockIn']);
+    Route::post('/timeclock/jobs/{job}/devices/{uuid}/clock-out', [\App\Http\Controllers\TimeclockController::class, 'clockOut']);
+    Route::get('/timeclock/jobs/{job}/devices/{uuid}', [\App\Http\Controllers\TimeclockController::class, 'currentEntry']);
 
 
 
