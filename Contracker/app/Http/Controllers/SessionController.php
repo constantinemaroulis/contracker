@@ -113,8 +113,8 @@ class SessionController extends Controller
                 return response()->json(['error' => 'Job location not found'], 404);
             }*/
 
-            // Custom distance threshold (meters)
-            $distanceThreshold = 200;
+            // Distance threshold in meters (configurable)
+            $distanceThreshold = config('contracker.distance_threshold', 200);
 
             // Calculate distance using Haversine formula
             $distance = DB::select("
@@ -222,13 +222,7 @@ class SessionController extends Controller
 
     public function listDevices(Request $request)
     {
-        /** @var \Carbon\Carbon $now */
-        $now = now();
-        $devices = ContrackerDevice::with(['jobLocation.job'])->get()->map(function ($device) use ($now) {
-            $device->online = $device->last_seen && ($now->diffInMinutes($device->last_seen)*-1) <= 3; // Device is online if last seen within 5 minutes
-            $device->last_ping = $now->diffInMinutes($device->last_seen)*-1;
-            return $device;
-        });
+        $devices = ContrackerDevice::with(['jobLocation.job'])->get();
 
         if ($request->wantsJson()) {
             return response()->json(['devices' => $devices]);

@@ -68,7 +68,11 @@ class MessageController extends Controller
             'read_at' => null,
         ]);
 
-        Log::info();
+        Log::info('Chat message stored', [
+            'device_uuid' => $deviceUuid,
+            'sender' => $senderUuid,
+            'recipient' => $recipientUuid,
+        ]);
 
         return response()->json(['status' => 'Message sent']);
     }
