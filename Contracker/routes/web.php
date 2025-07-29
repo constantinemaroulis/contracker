@@ -67,6 +67,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Timeclock');
     })->name('timeclock');
 
+    Route::get('/timecapture-demo', function () {
+        return Inertia::render('TimeCaptureDemo');
+    })->name('timecapture.demo');
+
     Route::get('/jobs/{jobId}/allocator', [CostCodeAllocatorController::class, 'index'])->name('costcode.allocator');
     Route::get('/session/jobs/{jobId}/allocator-data', [CostCodeAllocatorController::class, 'data'])->name('costcode.allocator.data');
 
