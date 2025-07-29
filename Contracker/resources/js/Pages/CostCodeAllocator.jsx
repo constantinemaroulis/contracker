@@ -1,32 +1,26 @@
-import { useEffect } from 'react';
-import AppLayout from '@/Layouts/AppLayout';
-
+import { useEffect, useState } from 'react';
+import SidebarLayout from '@/Layouts/SidebarLayout';
 import axios from 'axios';
+import FullCostCodeAllocator from '../Allocator/FullCostCodeAllocator.jsx';
 
 export default function CostCodeAllocator({ jobId }) {
-  useEffect(() => {
-    Promise.all([
-      import('react'),
-      import('react-dom/client'),
-      import('react-beautiful-dnd'),
-      axios.get(route('costcode.allocator.data', { jobId })),
-    ]).then(([React, ReactDOM, RBD, res]) => {
-      window.React = React;
-      window.ReactDOM = ReactDOM;
-      window.ReactBeautifulDnd = RBD;
-      window.ALLOCATOR_DATA = res.data;
-      import('../Allocator/CostCodeAllocatorApp.jsx');
+    const [data, setData] = useState(null);
 
-lt(el, window.ALLOCATOR_DATA);
+    useEffect(() => {
+        axios.get(route('costcode.allocator.data', { jobId }))
+            .then(res => setData(res.data))
+            .catch(err => console.error('Failed to load allocator data', err));
+    }, [jobId]);
 
-    });
-  }, [jobId]);
-
-  return (
-    <AppLayout header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Cost Code Allocator</h2>}>
-      <div className="py-6">
-        <div id="root"></div>
-      </div>
-    </AppLayout>
-  );
+    return (
+        <SidebarLayout header={<h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Cost Code Allocator</h2>}>
+            <div className="py-6">
+                {data ? (
+                    <FullCostCodeAllocator {...data} />
+                ) : (
+                    <p>Loading...</p>
+                )}
+            </div>
+        </SidebarLayout>
+    );
 }
