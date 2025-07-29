@@ -1,10 +1,22 @@
-import { useEffect, useState } from 'react';
-import SidebarLayout from '@/Layouts/SidebarLayout';
+
+import { useEffect } from 'react';
+import AppLayout from '@/Layouts/AppLayout';
 import axios from 'axios';
-import FullCostCodeAllocator from '../Allocator/FullCostCodeAllocator.jsx';
+import { route } from 'ziggy-js';
 
 export default function CostCodeAllocator({ jobId }) {
-    const [data, setData] = useState(null);
+  useEffect(() => {
+    Promise.all([
+      axios.get(route('costcode.allocator.data', { jobId })),
+      import('../Allocator/CostCodeAllocatorApp.jsx'),
+    ]).then(([res, mod]) => {
+      const el = document.getElementById('allocator-root');
+      mod.default(el, res.data);
+    }).catch(err => {
+      console.error('Failed to load allocator', err);
+    });
+  }, [jobId]);
+
 
     useEffect(() => {
         axios.get(route('costcode.allocator.data', { jobId }))

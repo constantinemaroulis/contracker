@@ -14,7 +14,6 @@ body {
     font-family: sans-serif;
 }
 
-
 /* Allocator specific styles */
 .allocator-container {
     display: flex;
@@ -39,4 +38,3 @@ body {
     border: 1px solid #ddd;
     border-radius: 4px;
 }
-

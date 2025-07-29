@@ -41,7 +41,16 @@ export default function RemoteControl({ auth }) {
         channel.onopen = () => setConnected(true);
 
         peer.ontrack = e => {
-            if (videoRef.current) videoRef.current.srcObject = e.streams[0];
+            if (videoRef.current) {
+                videoRef.current.srcObject = e.streams[0];
+                const playVideo = () => {
+                    const p = videoRef.current.play();
+                    if (p && p.catch) p.catch(() => {});
+                    videoRef.current.removeEventListener('loadedmetadata', playVideo);
+                };
+                videoRef.current.addEventListener('loadedmetadata', playVideo);
+                videoRef.current.muted = false;
+            }
         };
 
         peer.onicecandidate = e => {
@@ -94,7 +103,7 @@ export default function RemoteControl({ auth }) {
                             <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={startSession} disabled={!uuid}>Connect</button>
                         </div>
                         <div className="mt-4">
-                            <video ref={videoRef} autoPlay playsInline className="w-full border rounded" onMouseMove={e => sendEvent('mousemove', e)} onClick={e => sendEvent('click', e)} onKeyDown={e => sendEvent('keydown', e)} tabIndex="0" />
+                            <video ref={videoRef} autoPlay playsInline muted={!connected} className="w-full border rounded" onMouseMove={e => sendEvent('mousemove', e)} onClick={e => sendEvent('click', e)} onKeyDown={e => sendEvent('keydown', e)} tabIndex="0" />
                         </div>
                     </div>
                 </div>
