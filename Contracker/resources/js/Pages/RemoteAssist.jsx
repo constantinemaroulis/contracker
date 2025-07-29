@@ -27,7 +27,18 @@ export default function RemoteAssist({ auth, uuid }) {
 
     const startSharing = async () => {
         try {
-            const s = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            let s;
+            try {
+                s = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            } catch {
+                s = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                try {
+                    const audio = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    audio.getAudioTracks().forEach(t => s.addTrack(t));
+                } catch {
+                    // no audio available
+                }
+            }
             setStream(s);
             if (videoRef.current) {
                 videoRef.current.srcObject = s;
@@ -105,7 +116,7 @@ export default function RemoteAssist({ auth, uuid }) {
                                 Start Sharing
                             </button>
                         )}
-                        <video ref={videoRef} autoPlay playsInline className="w-full border rounded" />
+                        <video ref={videoRef} autoPlay playsInline muted className="w-full border rounded" />
                     </div>
                 </div>
             </div>
